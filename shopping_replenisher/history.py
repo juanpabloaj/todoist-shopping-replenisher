@@ -63,7 +63,7 @@ def build_item_histories(
             key=lambda occurrence: occurrence.completed_at,
         )
         occurrence_days = sorted(
-            {occurrence.completed_at.date() for occurrence in sorted_occurrences}
+            {_to_local_date(occurrence.completed_at) for occurrence in sorted_occurrences}
         )
         original_names = {occurrence.content for occurrence in sorted_occurrences}
         histories[canonical_name] = ItemHistory(
@@ -128,4 +128,16 @@ def _absolute_delta_seconds(left: datetime, right: datetime) -> float:
     """Return the absolute difference between two timestamps in seconds."""
 
     return abs((left - right).total_seconds())
+
+
+def _to_local_date(dt: datetime) -> date:
+    """Convert a datetime to a local calendar date.
+
+    Timezone-aware datetimes (e.g. UTC from Todoist) are converted to the
+    local system timezone before extracting the date, so that occurrence_days
+    align with date.today() used in scoring.
+    """
+    if dt.tzinfo is not None:
+        return dt.astimezone().date()
+    return dt.date()
 
