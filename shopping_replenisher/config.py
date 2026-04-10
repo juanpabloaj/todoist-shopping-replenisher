@@ -8,6 +8,8 @@ import os
 
 from dotenv import load_dotenv
 
+from shopping_replenisher.normalize import normalize
+
 
 class ConfigError(ValueError):
     """Raised when application configuration is invalid."""
@@ -28,6 +30,7 @@ class AppConfig:
     min_pattern_occurrences: int
     min_confidence: str
     buy_soon_days: int
+    ignored_items: frozenset[str]
     enable_completion_events_backfill: bool
     todoist_task_prefix: str
     log_level: str
@@ -68,6 +71,7 @@ def load_config(dotenv_path: str | Path | None = None) -> AppConfig:
         min_pattern_occurrences=_get_int("MIN_PATTERN_OCCURRENCES", default=4),
         min_confidence=_get_str("MIN_CONFIDENCE", default="medium"),
         buy_soon_days=_get_int("BUY_SOON_DAYS", default=7),
+        ignored_items=_get_ignored_items("IGNORED_ITEMS"),
         enable_completion_events_backfill=_get_bool(
             "ENABLE_COMPLETION_EVENTS_BACKFILL",
             default=True,
@@ -135,3 +139,17 @@ def _get_bool(name: str, default: bool) -> bool:
         return False
     raise ConfigError(f"Environment variable {name} must be a boolean.")
 
+
+def _get_ignored_items(name: str) -> frozenset[str]:
+    """Read a comma-separated set of ignored canonical item names."""
+
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return frozenset()
+
+    ignored_items = [
+        normalize(item.strip())
+        for item in value.split(",")
+        if item.strip()
+    ]
+    return frozenset(ignored_items)

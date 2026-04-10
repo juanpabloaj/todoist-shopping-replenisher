@@ -51,3 +51,19 @@ def test_load_config_accepts_required_variables(monkeypatch: pytest.MonkeyPatch)
     assert config.telegram_chat_id == "chat-id"
     assert config.auto_apply is False
     assert config.max_items_per_run == 5
+    assert config.ignored_items == frozenset()
+
+
+def test_load_config_normalizes_ignored_items(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ignored items should be parsed as normalized canonical names."""
+
+    monkeypatch.setenv("TODOIST_DB_PATH", "/tmp/todoist.db")
+    monkeypatch.setenv("TODOIST_API_TOKEN", "token")
+    monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat-id")
+    monkeypatch.setenv("IGNORED_ITEMS", " compra , Coca-Cola, eggs ")
+
+    config = load_config(dotenv_path="tests/does-not-exist.env")
+
+    assert config.ignored_items == frozenset({"compra", "coca cola", "egg"})
