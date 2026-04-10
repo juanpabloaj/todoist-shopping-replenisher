@@ -1,3 +1,4 @@
+.claude/settings.local.json
 data/todoist.db
 # Byte-compiled / optimized / DLL files
 __pycache__/
