@@ -25,7 +25,7 @@ def test_load_config_requires_all_required_variables(monkeypatch: pytest.MonkeyP
         monkeypatch.delenv(name, raising=False)
 
     with pytest.raises(ConfigError) as exc_info:
-        load_config()
+        load_config(dotenv_path="tests/does-not-exist.env")
 
     message = str(exc_info.value)
     for name in REQUIRED_ENV_VARS:
@@ -41,7 +41,7 @@ def test_load_config_accepts_required_variables(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot-token")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat-id")
 
-    config = load_config()
+    config = load_config(dotenv_path="tests/does-not-exist.env")
 
     assert isinstance(config, AppConfig)
     assert config.todoist_db_path == Path("/tmp/todoist.db")
