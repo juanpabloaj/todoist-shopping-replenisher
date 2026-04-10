@@ -70,9 +70,9 @@ def run_pipeline(config: AppConfig, apply_mode: bool) -> RunResult:
         for candidate in candidates:
             if candidate.auto_add:
                 added_task_ids.append(create_task(config, candidate))
-        send_run_summary(config, summary_candidates, added_task_ids)
+        send_run_summary(config, summary_candidates, added_task_ids, apply_mode=True)
     elif candidates or config.dry_run_notify_empty:
-        send_run_summary(config, summary_candidates, added_task_ids)
+        send_run_summary(config, summary_candidates, added_task_ids, apply_mode=False)
 
     return RunResult(
         candidates=candidates,

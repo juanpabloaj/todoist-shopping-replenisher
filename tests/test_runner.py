@@ -61,6 +61,8 @@ def test_run_pipeline_dry_run_writes_reports_and_can_notify_empty(
         config: AppConfig,
         candidates: list[Candidate],
         added_task_ids: list[str],
+        *,
+        apply_mode: bool = False,
     ) -> None:
         calls["telegram_calls"].append(
             {
@@ -145,6 +147,8 @@ def test_run_pipeline_apply_mode_creates_tasks_and_sends_summary(
         config: AppConfig,
         summary_candidates: list[Candidate],
         added_task_ids: list[str],
+        *,
+        apply_mode: bool = False,
     ) -> None:
         calls["telegram_calls"].append(
             {

@@ -17,10 +17,12 @@ def send_run_summary(
     config: AppConfig,
     candidates: list[Candidate],
     added_task_ids: list[str],
+    *,
+    apply_mode: bool = False,
 ) -> None:
     """Send a run summary message to the configured Telegram chat."""
 
-    message = _build_run_summary_message(candidates, added_task_ids)
+    message = _build_run_summary_message(candidates, added_task_ids, apply_mode=apply_mode)
     _send_message(config, message)
 
 
@@ -73,7 +75,12 @@ def _send_message(config: AppConfig, message: str) -> None:
         raise TelegramAPIError("Telegram API returned ok=false.")
 
 
-def _build_run_summary_message(candidates: list[Candidate], added_task_ids: list[str]) -> str:
+def _build_run_summary_message(
+    candidates: list[Candidate],
+    added_task_ids: list[str],
+    *,
+    apply_mode: bool = False,
+) -> str:
     """Build a plain-text summary for Telegram."""
 
     auto_add_candidates = [candidate for candidate in candidates if candidate.auto_add]
@@ -87,17 +94,24 @@ def _build_run_summary_message(candidates: list[Candidate], added_task_ids: list
         candidate for candidate in candidates if candidate.scored_item.is_active
     ]
 
+    if apply_mode:
+        add_section_label = "Items added:"
+        display_candidates = added_candidates
+    else:
+        add_section_label = "Items to add (dry-run):"
+        display_candidates = auto_add_candidates
+
     lines = [
         "Shopping replenisher summary",
         "",
         f"Candidates found: {len(candidates)}",
         "",
-        "Items added:",
+        add_section_label,
     ]
-    if added_candidates:
+    if display_candidates:
         lines.extend(
             f"- {candidate.scored_item.canonical_name} ({candidate.candidate_class})"
-            for candidate in added_candidates
+            for candidate in display_candidates
         )
     else:
         lines.append("- none")
