@@ -100,4 +100,3 @@ def _parse_completed_at(value: object) -> datetime:
         return datetime.fromisoformat(normalized)
     except ValueError as exc:
         raise ValueError(f"Invalid completed_at timestamp: {value}") from exc
-

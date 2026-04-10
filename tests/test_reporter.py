@@ -59,7 +59,10 @@ def test_write_report_artifacts_writes_json_markdown_and_csv(tmp_path: Path) -> 
     assert artifacts.report_dir.name == "20260409T083000"
     assert summary_payload["candidate_count"] == 1
     assert "# Prediction Summary" in summary_markdown
-    assert "| Item | Class | Auto-add | Confidence | Days Since Last | Typical Gap | Overdue Ratio |" in summary_markdown
+    assert (
+        "| Item | Class | Auto-add | Confidence | Days Since Last | Typical Gap | Overdue Ratio |"
+        in summary_markdown
+    )
     assert "| milk | now | true | medium | 7 | 7.00 | 1.00 |" in summary_markdown
     assert "canonical_name,candidate_class,auto_add,confidence" in candidates_csv
     assert "milk,now,true,medium" in candidates_csv

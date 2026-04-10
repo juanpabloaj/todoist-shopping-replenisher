@@ -37,7 +37,7 @@ def test_send_run_summary_posts_expected_message(monkeypatch: pytest.MonkeyPatch
 
     monkeypatch.setattr("shopping_replenisher.telegram.request.urlopen", fake_urlopen)
 
-    send_run_summary(config, candidates, added_task_ids=["task-1", "task-2"], apply_mode=True)
+    send_run_summary(config, candidates, added_task_ids=["task-1", "task-2"])
 
     assert captured["url"] == "https://api.telegram.org/botbot-token/sendMessage"
     assert captured["method"] == "POST"

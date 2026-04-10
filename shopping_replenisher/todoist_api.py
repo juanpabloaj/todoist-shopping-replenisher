@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import json
+import uuid
 from urllib import error, request
 
 from shopping_replenisher.config import AppConfig
 from shopping_replenisher.selection import Candidate
 
 
-TODOIST_TASKS_URL = "https://api.todoist.com/rest/v2/tasks"
+TODOIST_TASKS_URL = "https://api.todoist.com/api/v1/tasks"
 
 
 class TodoistAPIError(RuntimeError):
@@ -22,7 +23,7 @@ def create_task(config: AppConfig, candidate: Candidate) -> str:
     content = _build_task_content(config, candidate)
     payload = {
         "content": content,
-        "project_id": config.shopping_project_id,
+        "project_id": _build_project_id(config.shopping_project_id),
     }
     request_body = json.dumps(payload).encode("utf-8")
     http_request = request.Request(
@@ -32,6 +33,7 @@ def create_task(config: AppConfig, candidate: Candidate) -> str:
         headers={
             "Authorization": f"Bearer {config.todoist_api_token}",
             "Content-Type": "application/json",
+            "X-Request-Id": str(uuid.uuid4()),
         },
     )
 
@@ -50,10 +52,10 @@ def create_task(config: AppConfig, candidate: Candidate) -> str:
         raise TodoistAPIError("Todoist API returned invalid JSON.") from exc
 
     task_id = response_payload.get("id")
-    if not isinstance(task_id, str) or not task_id:
+    if not isinstance(task_id, (str, int)) or str(task_id) == "":
         raise TodoistAPIError("Todoist API response did not include a task id.")
 
-    return task_id
+    return str(task_id)
 
 
 def _build_task_content(config: AppConfig, candidate: Candidate) -> str:
@@ -63,3 +65,11 @@ def _build_task_content(config: AppConfig, candidate: Candidate) -> str:
     if not config.todoist_task_prefix:
         return item_name
     return f"{config.todoist_task_prefix}{item_name}"
+
+
+def _build_project_id(project_id: str) -> str | int:
+    """Convert a configured project id into the API payload representation."""
+
+    if project_id.isdigit():
+        return int(project_id)
+    return project_id

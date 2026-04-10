@@ -39,4 +39,3 @@ def test_normalize_is_conservative_for_unmatched_words() -> None:
     """The normalizer should not do fuzzy matching beyond the documented rules."""
 
     assert normalize("bread") == "bread"
-

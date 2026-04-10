@@ -175,7 +175,5 @@ def _configure_logging(log_level: str) -> None:
         logger.warning("invalid log level %s, defaulting to INFO", log_level)
 
 
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -46,9 +46,7 @@ def score_item_history(
     last_purchased = max(history.occurrence_days)
     days_since_last = (today - last_purchased).days
     overdue_ratio = (
-        days_since_last / typical_gap
-        if typical_gap is not None and typical_gap > 0
-        else None
+        days_since_last / typical_gap if typical_gap is not None and typical_gap > 0 else None
     )
 
     return ScoredItem(

@@ -71,4 +71,3 @@ def _singularize_word(word: str) -> str:
         return word[:-1]
 
     return word
-

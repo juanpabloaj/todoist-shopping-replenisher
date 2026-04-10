@@ -16,7 +16,11 @@ from shopping_replenisher.db import (
     fetch_completed_task_rows,
     fetch_completion_event_rows,
 )
-from shopping_replenisher.history import ItemHistory, build_item_histories, build_purchase_occurrences
+from shopping_replenisher.history import (
+    ItemHistory,
+    build_item_histories,
+    build_purchase_occurrences,
+)
 from shopping_replenisher.normalize import normalize
 from shopping_replenisher.reporter import ReportArtifacts, write_report_artifacts
 from shopping_replenisher.scoring import score_item_history
@@ -94,9 +98,9 @@ def run_pipeline(config: AppConfig, apply_mode: bool) -> RunResult:
             item_name = candidate.scored_item.canonical_name
             try:
                 task_id = create_task(config, candidate)
-            except TodoistAPIError:
+            except TodoistAPIError as exc:
                 failed_items.append(item_name)
-                logger.error("task creation failed item=%s", item_name)
+                logger.error("task creation failed item=%s error=%s", item_name, exc)
                 continue
 
             added_task_ids.append(task_id)

@@ -145,9 +145,5 @@ def _get_ignored_items(name: str) -> frozenset[str]:
     if value is None or not value.strip():
         return frozenset()
 
-    ignored_items = [
-        normalize(item.strip())
-        for item in value.split(",")
-        if item.strip()
-    ]
+    ignored_items = [normalize(item.strip()) for item in value.split(",") if item.strip()]
     return frozenset(ignored_items)

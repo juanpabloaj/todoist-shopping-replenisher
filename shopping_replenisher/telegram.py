@@ -17,12 +17,10 @@ def send_run_summary(
     config: AppConfig,
     candidates: list[Candidate],
     added_task_ids: list[str],
-    *,
-    apply_mode: bool = False,
 ) -> None:
     """Send a run summary message to the configured Telegram chat."""
 
-    message = _build_run_summary_message(candidates, added_task_ids, apply_mode=apply_mode)
+    message = _build_run_summary_message(candidates, added_task_ids)
     _send_message(config, message)
 
 
@@ -78,25 +76,20 @@ def _send_message(config: AppConfig, message: str) -> None:
 def _build_run_summary_message(
     candidates: list[Candidate],
     added_task_ids: list[str],
-    *,
-    apply_mode: bool = False,
 ) -> str:
     """Build a human-friendly plain-text summary for Telegram."""
 
     auto_add_candidates = [c for c in candidates if c.auto_add and not c.scored_item.is_active]
-    display_candidates = auto_add_candidates[: len(added_task_ids)] if apply_mode else auto_add_candidates
-
-    now_candidates = [c for c in display_candidates if c.candidate_class == "now"]
-    soon_candidates = [c for c in display_candidates if c.candidate_class == "soon"]
+    added_candidates = auto_add_candidates[: len(added_task_ids)]
+    now_candidates = [c for c in added_candidates if c.candidate_class == "now"]
+    soon_candidates = [c for c in added_candidates if c.candidate_class == "soon"]
     optional_candidates = [
-        c for c in candidates
-        if c.candidate_class == "optional" and not c.scored_item.is_active
+        c for c in candidates if c.candidate_class == "optional" and not c.scored_item.is_active
     ]
 
-    dry_run_suffix = " (dry-run)" if not apply_mode else ""
-    lines = [f"Replenisher{dry_run_suffix}", ""]
+    lines = ["Replenisher", ""]
 
-    if not display_candidates and not optional_candidates:
+    if not added_candidates and not optional_candidates:
         lines.append("Nothing to replenish today.")
         return "\n".join(lines)
 

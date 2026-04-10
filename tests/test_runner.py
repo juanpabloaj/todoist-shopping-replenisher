@@ -27,7 +27,9 @@ def test_run_pipeline_dry_run_writes_reports_and_can_notify_empty(
     }
 
     monkeypatch.setattr("shopping_replenisher.runner.sqlite3.connect", _fake_connect)
-    monkeypatch.setattr("shopping_replenisher.runner.fetch_active_items", lambda conn, project_id: [])
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_active_items", lambda conn, project_id: []
+    )
     monkeypatch.setattr(
         "shopping_replenisher.runner.fetch_completion_event_rows",
         lambda conn, project_id: [],
@@ -64,7 +66,9 @@ def test_run_pipeline_dry_run_writes_reports_and_can_notify_empty(
     ) -> None:
         calls["telegram_calls"].append(
             {
-                "candidate_names": [candidate.scored_item.canonical_name for candidate in candidates],
+                "candidate_names": [
+                    candidate.scored_item.canonical_name for candidate in candidates
+                ],
                 "added_task_ids": added_task_ids,
             }
         )
@@ -104,7 +108,9 @@ def test_run_pipeline_apply_mode_creates_tasks_and_sends_summary(
     }
 
     monkeypatch.setattr("shopping_replenisher.runner.sqlite3.connect", _fake_connect)
-    monkeypatch.setattr("shopping_replenisher.runner.fetch_active_items", lambda conn, project_id: [])
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_active_items", lambda conn, project_id: []
+    )
     monkeypatch.setattr(
         "shopping_replenisher.runner.fetch_completion_event_rows",
         lambda conn, project_id: [],

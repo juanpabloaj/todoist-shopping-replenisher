@@ -18,22 +18,42 @@ def test_select_candidates_filters_and_ranks_results() -> None:
         "milk": _build_history(
             "milk",
             ["Milk", "Milk", "Milk", "Milk"],
-            ["2026-03-01T08:00:00", "2026-03-08T08:00:00", "2026-03-15T08:00:00", "2026-03-22T08:00:00"],
+            [
+                "2026-03-01T08:00:00",
+                "2026-03-08T08:00:00",
+                "2026-03-15T08:00:00",
+                "2026-03-22T08:00:00",
+            ],
         ),
         "egg": _build_history(
             "egg",
             ["Eggs", "Eggs", "Eggs", "Eggs"],
-            ["2026-03-10T08:00:00", "2026-03-20T08:00:00", "2026-03-30T08:00:00", "2026-04-09T08:00:00"],
+            [
+                "2026-03-10T08:00:00",
+                "2026-03-20T08:00:00",
+                "2026-03-30T08:00:00",
+                "2026-04-09T08:00:00",
+            ],
         ),
         "bread": _build_history(
             "bread",
             ["Bread", "Bread", "Bread", "Bread"],
-            ["2026-03-01T08:00:00", "2026-03-15T08:00:00", "2026-03-16T08:00:00", "2026-04-01T08:00:00"],
+            [
+                "2026-03-01T08:00:00",
+                "2026-03-15T08:00:00",
+                "2026-03-16T08:00:00",
+                "2026-04-01T08:00:00",
+            ],
         ),
         "compra": _build_history(
             "compra",
             ["Compra", "Compra", "Compra", "Compra"],
-            ["2026-03-01T08:00:00", "2026-03-08T08:00:00", "2026-03-15T08:00:00", "2026-03-22T08:00:00"],
+            [
+                "2026-03-01T08:00:00",
+                "2026-03-08T08:00:00",
+                "2026-03-15T08:00:00",
+                "2026-03-22T08:00:00",
+            ],
         ),
         "coffee": _build_history(
             "coffee",
@@ -69,17 +89,32 @@ def test_select_candidates_limits_auto_add_classes_but_keeps_optional() -> None:
         "milk": _build_history(
             "milk",
             ["Milk", "Milk", "Milk", "Milk"],
-            ["2026-03-01T08:00:00", "2026-03-08T08:00:00", "2026-03-15T08:00:00", "2026-03-22T08:00:00"],
+            [
+                "2026-03-01T08:00:00",
+                "2026-03-08T08:00:00",
+                "2026-03-15T08:00:00",
+                "2026-03-22T08:00:00",
+            ],
         ),
         "rice": _build_history(
             "rice",
             ["Rice", "Rice", "Rice", "Rice"],
-            ["2026-03-05T08:00:00", "2026-03-12T08:00:00", "2026-03-19T08:00:00", "2026-03-26T08:00:00"],
+            [
+                "2026-03-05T08:00:00",
+                "2026-03-12T08:00:00",
+                "2026-03-19T08:00:00",
+                "2026-03-26T08:00:00",
+            ],
         ),
         "coca cola": _build_history(
             "coca cola",
             ["Coca Cola", "Coca Cola", "Coca Cola", "Coca Cola"],
-            ["2026-03-01T08:00:00", "2026-03-15T08:00:00", "2026-03-29T08:00:00", "2026-04-05T08:00:00"],
+            [
+                "2026-03-01T08:00:00",
+                "2026-03-15T08:00:00",
+                "2026-03-29T08:00:00",
+                "2026-04-05T08:00:00",
+            ],
         ),
     }
     config = _build_config(
@@ -97,7 +132,10 @@ def test_select_candidates_limits_auto_add_classes_but_keeps_optional() -> None:
         today=date(2026, 4, 9),
     )
 
-    assert [candidate.scored_item.canonical_name for candidate in candidates] == ["milk", "coca cola"]
+    assert [candidate.scored_item.canonical_name for candidate in candidates] == [
+        "milk",
+        "coca cola",
+    ]
     assert [candidate.candidate_class for candidate in candidates] == ["now", "optional"]
     assert [candidate.auto_add for candidate in candidates] == [True, False]
 

@@ -102,4 +102,3 @@ def test_score_item_history_returns_low_confidence_without_stable_pattern() -> N
     assert scored_item.gap_stddev == 5.5
     assert scored_item.confidence == "low"
     assert scored_item.is_active is True
-

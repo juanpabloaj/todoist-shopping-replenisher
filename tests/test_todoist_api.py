@@ -29,14 +29,14 @@ def test_create_task_posts_expected_payload(monkeypatch: pytest.MonkeyPatch) -> 
         captured["authorization"] = headers.get("authorization")
         captured["content_type"] = headers.get("content-type")
         captured["body"] = json.loads(http_request.data.decode("utf-8"))
-        return _FakeResponse('{"id": "task-123"}')
+        return _FakeResponse('{"id": 123}')
 
     monkeypatch.setattr("shopping_replenisher.todoist_api.request.urlopen", fake_urlopen)
 
     task_id = create_task(config, candidate)
 
-    assert task_id == "task-123"
-    assert captured["url"] == "https://api.todoist.com/rest/v2/tasks"
+    assert task_id == "123"
+    assert captured["url"] == "https://api.todoist.com/api/v1/tasks"
     assert captured["method"] == "POST"
     assert captured["authorization"] == "Bearer token"
     assert captured["content_type"] == "application/json"
@@ -55,13 +55,13 @@ def test_create_task_applies_optional_prefix(monkeypatch: pytest.MonkeyPatch) ->
 
     def fake_urlopen(http_request: request.Request) -> "_FakeResponse":
         captured["body"] = json.loads(http_request.data.decode("utf-8"))
-        return _FakeResponse('{"id": "task-456"}')
+        return _FakeResponse('{"id": 456}')
 
     monkeypatch.setattr("shopping_replenisher.todoist_api.request.urlopen", fake_urlopen)
 
     task_id = create_task(config, candidate)
 
-    assert task_id == "task-456"
+    assert task_id == "456"
     assert captured["body"] == {
         "content": "[buy] milk",
         "project_id": "project-id",

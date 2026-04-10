@@ -140,4 +140,3 @@ def _to_local_date(dt: datetime) -> date:
     if dt.tzinfo is not None:
         return dt.astimezone().date()
     return dt.date()
-
