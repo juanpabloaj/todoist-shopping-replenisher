@@ -124,7 +124,6 @@ def _build_config() -> AppConfig:
         timezone="your_timezone",
         overrule_active_duplicates=False,
         forgotten_ratio_threshold=1.75,
-        dry_run_notify_empty=True,
     )
 
 

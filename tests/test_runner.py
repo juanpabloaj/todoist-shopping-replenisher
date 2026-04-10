@@ -17,13 +17,13 @@ from shopping_replenisher.selection import Candidate
 def test_run_pipeline_dry_run_writes_reports_and_can_notify_empty(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Dry runs should skip Todoist writes and still notify when configured for empty runs."""
+    """Dry runs should skip Todoist writes, notifications, and reports."""
 
-    config = _build_config(dry_run_notify_empty=True)
-    report_artifacts = _build_report_artifacts()
+    config = _build_config()
     calls: dict[str, object] = {
         "todoist_calls": [],
         "telegram_calls": [],
+        "report_calls": [],
     }
 
     monkeypatch.setattr("shopping_replenisher.runner.sqlite3.connect", _fake_connect)
@@ -50,7 +50,7 @@ def test_run_pipeline_dry_run_writes_reports_and_can_notify_empty(
     )
     monkeypatch.setattr(
         "shopping_replenisher.runner.write_report_artifacts",
-        lambda candidates, reports_root, generated_at: report_artifacts,
+        lambda candidates, reports_root, generated_at: calls["report_calls"].append(candidates),
     )
 
     def fake_create_task(config: AppConfig, candidate: Candidate) -> str:
@@ -61,8 +61,6 @@ def test_run_pipeline_dry_run_writes_reports_and_can_notify_empty(
         config: AppConfig,
         candidates: list[Candidate],
         added_task_ids: list[str],
-        *,
-        apply_mode: bool = False,
     ) -> None:
         calls["telegram_calls"].append(
             {
@@ -79,16 +77,13 @@ def test_run_pipeline_dry_run_writes_reports_and_can_notify_empty(
     assert result == RunResult(
         candidates=[],
         added_task_ids=[],
-        report_artifacts=report_artifacts,
+        report_artifacts=None,
         apply_mode=False,
+        failed_items=[],
     )
     assert calls["todoist_calls"] == []
-    assert calls["telegram_calls"] == [
-        {
-            "candidate_names": [],
-            "added_task_ids": [],
-        }
-    ]
+    assert calls["telegram_calls"] == []
+    assert calls["report_calls"] == []
 
 
 def test_run_pipeline_apply_mode_creates_tasks_and_sends_summary(
@@ -96,7 +91,7 @@ def test_run_pipeline_apply_mode_creates_tasks_and_sends_summary(
 ) -> None:
     """Apply mode should create Todoist tasks for auto-add candidates and notify Telegram."""
 
-    config = _build_config(dry_run_notify_empty=False)
+    config = _build_config()
     report_artifacts = _build_report_artifacts()
     candidates = [
         _build_candidate("milk", "now", True, is_active=False),
@@ -147,8 +142,6 @@ def test_run_pipeline_apply_mode_creates_tasks_and_sends_summary(
         config: AppConfig,
         summary_candidates: list[Candidate],
         added_task_ids: list[str],
-        *,
-        apply_mode: bool = False,
     ) -> None:
         calls["telegram_calls"].append(
             {
@@ -169,6 +162,7 @@ def test_run_pipeline_apply_mode_creates_tasks_and_sends_summary(
         added_task_ids=["task-milk"],
         report_artifacts=report_artifacts,
         apply_mode=True,
+        failed_items=[],
     )
     assert calls["todoist_calls"] == ["milk"]
     assert calls["telegram_calls"] == [
@@ -179,7 +173,7 @@ def test_run_pipeline_apply_mode_creates_tasks_and_sends_summary(
     ]
 
 
-def _build_config(*, dry_run_notify_empty: bool) -> AppConfig:
+def _build_config() -> AppConfig:
     """Build a config object for runner tests."""
 
     return AppConfig(
@@ -201,7 +195,6 @@ def _build_config(*, dry_run_notify_empty: bool) -> AppConfig:
         timezone="your_timezone",
         overrule_active_duplicates=False,
         forgotten_ratio_threshold=1.75,
-        dry_run_notify_empty=dry_run_notify_empty,
     )
 
 

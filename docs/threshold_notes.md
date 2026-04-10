@@ -68,3 +68,5 @@ The `medium` threshold was kept unchanged:
 ## Notes
 
 - The reviewed run also showed some candidates with `days_since_last = -1`, which indicates purchase timestamps later than the local run date. That issue does not change the confidence heuristic directly, but it should be kept in mind during future real-data validation.
+- Known operational risk: apply-mode idempotency still depends on the Todoist SQLite state being up to date before the next scheduled run. If a scheduled run happens before newly created tasks are reflected locally, the same item could be proposed again.
+- No automatic retries are implemented for Todoist or Telegram failures. The next scheduled cron run is the intended retry mechanism.

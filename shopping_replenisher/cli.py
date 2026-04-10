@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from datetime import date, datetime
 import json
+import logging
 from pathlib import Path
 import sqlite3
 from typing import Sequence
@@ -20,6 +21,9 @@ from shopping_replenisher.history import build_item_histories, build_purchase_oc
 from shopping_replenisher.reporter import build_summary_payload, write_report_artifacts
 from shopping_replenisher.runner import run_pipeline
 from shopping_replenisher.selection import select_candidates
+
+
+logger = logging.getLogger(__name__)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -65,6 +69,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ConfigError as exc:
         parser.exit(status=2, message=f"Configuration error: {exc}\n")
 
+    _configure_logging(config.log_level)
+
     if args.command == "inspect":
         return _handle_inspect(config)
     if args.command == "predict":
@@ -79,17 +85,18 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _handle_inspect(config: AppConfig) -> int:
     """Handle the inspect subcommand."""
 
-    print("Configuration is valid.")
-    print(f"TODOIST_DB_PATH={config.todoist_db_path}")
-    print(f"SHOPPING_PROJECT_ID={config.shopping_project_id}")
-    print(f"AUTO_APPLY={config.auto_apply}")
-    print(f"LOG_LEVEL={config.log_level}")
+    logger.info("configuration is valid")
+    logger.info("TODOIST_DB_PATH=%s", config.todoist_db_path)
+    logger.info("SHOPPING_PROJECT_ID=%s", config.shopping_project_id)
+    logger.info("AUTO_APPLY=%s", config.auto_apply)
+    logger.info("LOG_LEVEL=%s", config.log_level)
     return 0
 
 
 def _handle_predict(config: AppConfig, output_json: bool) -> int:
     """Handle the local prediction flow."""
 
+    logger.info("predict started")
     with sqlite3.connect(config.todoist_db_path) as conn:
         active_items = fetch_active_items(conn, config.shopping_project_id)
         completion_events = fetch_completion_event_rows(conn, config.shopping_project_id)
@@ -112,7 +119,7 @@ def _handle_predict(config: AppConfig, output_json: bool) -> int:
     )
     payload = build_summary_payload(candidates, generated_at=generated_at)
 
-    print(f"Report written to {artifacts.report_dir}")
+    logger.info("predict report written path=%s", artifacts.report_dir)
     if output_json:
         print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
@@ -122,11 +129,9 @@ def _handle_run(config: AppConfig, apply_mode: bool) -> int:
     """Handle the full pipeline command."""
 
     result = run_pipeline(config, apply_mode=apply_mode)
-    print(f"Report written to {result.report_artifacts.report_dir}")
-    print(f"Apply mode: {result.apply_mode}")
-    print(f"Candidates: {len(result.candidates)}")
-    print(f"Added tasks: {len(result.added_task_ids)}")
-    return 0
+    if result.report_artifacts is not None:
+        logger.info("run report written path=%s", result.report_artifacts.report_dir)
+    return 1 if result.failed_items else 0
 
 
 def _resolve_today(config: AppConfig) -> date:
@@ -151,6 +156,20 @@ def _resolve_generated_at(config: AppConfig) -> datetime:
         return datetime.now(ZoneInfo(config.timezone))
     except ZoneInfoNotFoundError:
         return datetime.now()
+
+
+def _configure_logging(log_level: str) -> None:
+    """Configure process logging with timestamps and the requested level."""
+
+    level_name = log_level.upper()
+    level = getattr(logging, level_name, logging.INFO)
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+        force=True,
+    )
+    if level_name not in logging.getLevelNamesMapping():
+        logger.warning("invalid log level %s, defaulting to INFO", log_level)
 
 
 

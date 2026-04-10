@@ -37,7 +37,7 @@ Every stage must satisfy all of the following before being marked `Done`:
 | 8 | Todoist Write Client | Done | Tests for API request construction, error handling, and dry-run safeguards | Validate task creation in a real Todoist test/project environment | Selected candidates can be created as Todoist tasks with correct naming, project targeting, and safe dry-run behavior |
 | 9 | Telegram Notifications | Done | Tests for message formatting and notification error handling | Validate delivery and message content in a real Telegram chat | Run summaries and errors can be sent to Telegram with clear item outcomes |
 | 10 | Full Apply Pipeline | Done | End-to-end tests for orchestration and apply/dry-run branching where practical | Run the full pipeline on real data in dry-run, then with apply enabled | `run` and `run --apply` orchestrate prediction, Todoist writes, reporting, and notifications safely |
-| 11 | Hardening and Operational Quality | Not Started | Tests for logging paths, empty runs, timeout/error handling, and edge cases | Validate operational behavior on realistic empty/noisy/error scenarios | The system behaves predictably under failures, empty inputs, and operational edge cases |
+| 11 | Hardening and Operational Quality | Done | Tests for logging paths, empty runs, timeout/error handling, and edge cases | Validate operational behavior on realistic empty/noisy/error scenarios | The system behaves predictably under failures, empty inputs, and operational edge cases |
 | 12 | Cron and Operations Documentation | Not Started | Documentation review and any smoke tests for scheduled invocation scripts | Validate scheduled execution in the target environment | Cron setup and operating instructions are documented, and scheduled execution has been tested in practice |
 
 ## Stage Details
@@ -200,3 +200,4 @@ Use this section to record stage transitions and the evidence for each status ch
 | 2026-04-09 | Stage 8 | `Not Started` → `Done` | Todoist write client implemented with mocked tests, dry-run remains default, 39 tests passing |
 | 2026-04-09 | Stage 9 | `Not Started` → `Done` | Telegram notifications implemented, delivery validated on real channel, 42 tests passing |
 | 2026-04-09 | Stage 10 | `Not Started` → `Done` | Full pipeline wired, run and run --apply working, dry-run validated, 44 tests passing |
+| 2026-04-09 | Stage 11 | `Not Started` → `Done` | Logging, exception handling, conditional reports/notifications, exit codes, 44 tests passing |

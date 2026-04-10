@@ -37,7 +37,6 @@ class AppConfig:
     timezone: str
     overrule_active_duplicates: bool
     forgotten_ratio_threshold: float
-    dry_run_notify_empty: bool
 
 
 REQUIRED_ENV_VARS: tuple[str, ...] = (
@@ -81,7 +80,6 @@ def load_config(dotenv_path: str | Path | None = None) -> AppConfig:
         timezone=_get_str("TIMEZONE", default="your_timezone"),
         overrule_active_duplicates=_get_bool("OVERRULE_ACTIVE_DUPLICATES", default=False),
         forgotten_ratio_threshold=_get_float("FORGOTTEN_RATIO_THRESHOLD", default=1.75),
-        dry_run_notify_empty=_get_bool("DRY_RUN_NOTIFY_EMPTY", default=True),
     )
 
 
