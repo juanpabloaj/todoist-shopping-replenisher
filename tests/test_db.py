@@ -31,9 +31,9 @@ def sqlite_conn() -> sqlite3.Connection:
 
         CREATE TABLE completion_events (
             task_id TEXT NOT NULL,
-            project_id TEXT NOT NULL,
-            content TEXT NOT NULL,
-            completed_at TEXT NOT NULL
+            parent_project_id TEXT,
+            content TEXT,
+            event_date TEXT NOT NULL
         );
 
         CREATE TABLE completed_tasks (
@@ -55,7 +55,7 @@ def sqlite_conn() -> sqlite3.Connection:
     )
     conn.executemany(
         """
-        INSERT INTO completion_events (task_id, project_id, content, completed_at)
+        INSERT INTO completion_events (task_id, parent_project_id, content, event_date)
         VALUES (?, ?, ?, ?)
         """,
         [

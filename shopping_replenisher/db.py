@@ -51,9 +51,9 @@ def fetch_completion_event_rows(conn: sqlite3.Connection, project_id: str) -> li
         SELECT
             task_id,
             content,
-            completed_at
+            event_date
         FROM completion_events
-        WHERE project_id = ?
+        WHERE parent_project_id = ?
     """
     rows = conn.execute(query, (project_id,)).fetchall()
     return [_build_completion_row(row) for row in rows]
