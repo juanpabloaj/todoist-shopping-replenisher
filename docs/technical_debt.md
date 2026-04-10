@@ -4,7 +4,7 @@ Use this file as the current backlog of engineering issues that should be review
 
 ## High Priority
 
-- [ ] Validate `TIMEZONE` during config load
+- [x] Validate `TIMEZONE` during config load
   - Problem: `TIMEZONE` is currently optional, but an invalid value does not fail fast. The code falls back silently to host-local time.
   - Why it matters: this can hide misconfiguration and produce inconsistent date handling across environments.
   - Relevant files:
@@ -13,6 +13,7 @@ Use this file as the current backlog of engineering issues that should be review
     - `shopping_replenisher/runner.py`
     - `shopping_replenisher/cli.py`
   - Expected outcome: invalid timezone names should raise `ConfigError` during `load_config()`, with direct tests covering valid and invalid cases.
+  - Resolved: `load_config()` now calls `ZoneInfo(value)` at load time and raises `ConfigError` for invalid IANA names. Three tests added: valid timezone, invalid timezone, absent timezone.
 
 - [ ] Reduce duplicated pipeline logic between `predict` and `run`
   - Problem: `shopping_replenisher/cli.py` and `shopping_replenisher/runner.py` still contain overlapping data-loading and pipeline-building logic.

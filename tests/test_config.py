@@ -85,3 +85,49 @@ def test_load_config_rejects_invalid_min_confidence(
         load_config(dotenv_path="tests/does-not-exist.env")
 
     assert "MIN_CONFIDENCE" in str(exc_info.value)
+
+
+def test_load_config_accepts_valid_timezone(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A valid IANA timezone should load without error."""
+
+    monkeypatch.setenv("TODOIST_DB_PATH", "/tmp/todoist.db")
+    monkeypatch.setenv("TODOIST_API_TOKEN", "token")
+    monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat-id")
+    monkeypatch.setenv("TIMEZONE", "America/Santiago")
+
+    config = load_config(dotenv_path="tests/does-not-exist.env")
+
+    assert config.timezone == "America/Santiago"
+
+
+def test_load_config_rejects_invalid_timezone(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An invalid timezone should fail during config loading."""
+
+    monkeypatch.setenv("TODOIST_DB_PATH", "/tmp/todoist.db")
+    monkeypatch.setenv("TODOIST_API_TOKEN", "token")
+    monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat-id")
+    monkeypatch.setenv("TIMEZONE", "Mars/Olympus_Mons")
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config(dotenv_path="tests/does-not-exist.env")
+
+    assert "TIMEZONE" in str(exc_info.value)
+
+
+def test_load_config_accepts_missing_timezone(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A missing timezone should remain valid and resolve to None."""
+
+    monkeypatch.setenv("TODOIST_DB_PATH", "/tmp/todoist.db")
+    monkeypatch.setenv("TODOIST_API_TOKEN", "token")
+    monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat-id")
+    monkeypatch.delenv("TIMEZONE", raising=False)
+
+    config = load_config(dotenv_path="tests/does-not-exist.env")
+
+    assert config.timezone is None

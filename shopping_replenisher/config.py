@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import os
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from dotenv import load_dotenv
 
@@ -59,6 +60,14 @@ def load_config(dotenv_path: str | Path | None = None) -> AppConfig:
     if min_confidence not in ALLOWED_CONFIDENCE_LEVELS:
         allowed_levels = ", ".join(sorted(ALLOWED_CONFIDENCE_LEVELS))
         raise ConfigError(f"Environment variable MIN_CONFIDENCE must be one of: {allowed_levels}.")
+    timezone = _get_optional_str("TIMEZONE")
+    if timezone is not None:
+        try:
+            ZoneInfo(timezone)
+        except ZoneInfoNotFoundError as exc:
+            raise ConfigError(
+                "Environment variable TIMEZONE must be a valid IANA timezone name."
+            ) from exc
 
     return AppConfig(
         todoist_db_path=Path(_get_required_str("TODOIST_DB_PATH")),
@@ -74,7 +83,7 @@ def load_config(dotenv_path: str | Path | None = None) -> AppConfig:
         ignored_items=_get_ignored_items("IGNORED_ITEMS"),
         todoist_task_prefix=_get_str("TODOIST_TASK_PREFIX", default=""),
         log_level=_get_str("LOG_LEVEL", default="INFO"),
-        timezone=_get_optional_str("TIMEZONE"),
+        timezone=timezone,
     )
 
 
