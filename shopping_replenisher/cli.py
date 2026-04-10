@@ -20,7 +20,7 @@ from shopping_replenisher.db import (
 from shopping_replenisher.history import build_item_histories, build_purchase_occurrences
 from shopping_replenisher.reporter import build_summary_payload, write_report_artifacts
 from shopping_replenisher.runner import run_pipeline
-from shopping_replenisher.selection import select_candidates
+from shopping_replenisher.selection import Candidate, select_candidates
 
 
 logger = logging.getLogger(__name__)
@@ -100,21 +100,8 @@ def _handle_predict(config: AppConfig, output_json: bool) -> int:
     """Handle the local prediction flow."""
 
     logger.info("predict started")
-    with sqlite3.connect(config.todoist_db_path) as conn:
-        active_items = fetch_active_items(conn, config.shopping_project_id)
-        completion_events = fetch_completion_event_rows(conn, config.shopping_project_id)
-        completed_tasks = fetch_completed_task_rows(conn, config.shopping_project_id)
-
-    occurrences = build_purchase_occurrences(completion_events, completed_tasks)
-    histories = build_item_histories(occurrences)
-    today = _resolve_today(config)
+    candidates = _build_prediction_candidates(config)
     generated_at = _resolve_generated_at(config)
-    candidates = select_candidates(
-        histories=histories,
-        active_items=active_items,
-        config=config,
-        today=today,
-    )
     artifacts = write_report_artifacts(
         candidates,
         reports_root=Path("reports"),
@@ -126,6 +113,26 @@ def _handle_predict(config: AppConfig, output_json: bool) -> int:
     if output_json:
         print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
+
+
+def _build_prediction_candidates(config: AppConfig) -> list[Candidate]:
+    """Build prediction candidates for the local diagnostic flow."""
+
+    with sqlite3.connect(config.todoist_db_path) as conn:
+        active_items = fetch_active_items(conn, config.shopping_project_id)
+        completion_events = fetch_completion_event_rows(conn, config.shopping_project_id)
+        completed_tasks = fetch_completed_task_rows(conn, config.shopping_project_id)
+
+    occurrences = build_purchase_occurrences(completion_events, completed_tasks)
+    histories = build_item_histories(occurrences)
+    today = _resolve_today(config)
+    candidates = select_candidates(
+        histories=histories,
+        active_items=active_items,
+        config=config,
+        today=today,
+    )
+    return candidates
 
 
 def _handle_run(config: AppConfig, apply_mode: bool) -> int:

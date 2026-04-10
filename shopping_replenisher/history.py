@@ -119,7 +119,7 @@ def _is_medium_match(
 
     if candidate_canonical_name != occurrence.canonical_name:
         return False
-    if candidate.completed_at.date() != occurrence.completed_at.date():
+    if _to_local_date(candidate.completed_at) != _to_local_date(occurrence.completed_at):
         return False
     return _absolute_delta_seconds(candidate.completed_at, occurrence.completed_at) <= 10
 

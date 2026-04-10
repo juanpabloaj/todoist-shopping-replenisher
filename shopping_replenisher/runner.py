@@ -11,19 +11,12 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from shopping_replenisher.config import AppConfig
 from shopping_replenisher.db import (
-    ActiveItemRow,
     fetch_active_items,
     fetch_completed_task_rows,
     fetch_completion_event_rows,
 )
-from shopping_replenisher.history import (
-    ItemHistory,
-    build_item_histories,
-    build_purchase_occurrences,
-)
-from shopping_replenisher.normalize import normalize
+from shopping_replenisher.history import build_item_histories, build_purchase_occurrences
 from shopping_replenisher.reporter import ReportArtifacts, write_report_artifacts
-from shopping_replenisher.scoring import score_item_history
 from shopping_replenisher.selection import Candidate, select_candidates
 from shopping_replenisher.telegram import TelegramAPIError, send_run_summary
 from shopping_replenisher.todoist_api import TodoistAPIError, create_task
@@ -108,20 +101,12 @@ def run_pipeline(config: AppConfig, apply_mode: bool) -> RunResult:
             logger.info("task created item=%s task_id=%s", item_name, task_id)
 
         if added_task_ids:
-            summary_candidates = (
-                added_candidates
-                + optional_candidates
-                + _build_skipped_active_candidates(
-                    histories=histories,
-                    active_items=active_items,
-                    today=today,
-                )
-            )
+            summary_candidates = added_candidates + optional_candidates
             try:
                 send_run_summary(config, summary_candidates, added_task_ids)
                 logger.info("telegram notification sent added_count=%s", len(added_task_ids))
-            except TelegramAPIError:
-                logger.error("telegram notification failed")
+            except TelegramAPIError as exc:
+                logger.error("telegram notification failed error=%s", exc)
         elif failed_items:
             logger.error("all Todoist writes failed candidate_count=%s", len(auto_add_candidates))
 
@@ -140,31 +125,6 @@ def run_pipeline(config: AppConfig, apply_mode: bool) -> RunResult:
         apply_mode=apply_mode,
         failed_items=failed_items,
     )
-
-
-def _build_skipped_active_candidates(
-    *,
-    histories: dict[str, ItemHistory],
-    active_items: list[ActiveItemRow],
-    today: date,
-) -> list[Candidate]:
-    """Build summary-only candidates for items skipped because they are already active."""
-
-    active_by_canonical_name = {normalize(item.content): item for item in active_items}
-    skipped_candidates: list[Candidate] = []
-    for canonical_name in sorted(active_by_canonical_name):
-        history = histories.get(canonical_name)
-        if history is None:
-            continue
-        scored_item = score_item_history(history, today=today, is_active=True)
-        skipped_candidates.append(
-            Candidate(
-                scored_item=scored_item,
-                candidate_class="optional",
-                auto_add=False,
-            )
-        )
-    return skipped_candidates
 
 
 def _resolve_today(config: AppConfig) -> date:

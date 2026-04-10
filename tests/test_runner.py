@@ -101,7 +101,6 @@ def test_run_pipeline_apply_mode_creates_tasks_and_sends_summary(
         _build_candidate("milk", "now", True, is_active=False),
         _build_candidate("bread", "optional", False, is_active=False),
     ]
-    skipped_active_candidate = _build_candidate("eggs", "optional", False, is_active=True)
     calls: dict[str, object] = {
         "todoist_calls": [],
         "telegram_calls": [],
@@ -134,10 +133,6 @@ def test_run_pipeline_apply_mode_creates_tasks_and_sends_summary(
     monkeypatch.setattr(
         "shopping_replenisher.runner.write_report_artifacts",
         lambda candidates, reports_root, generated_at: report_artifacts,
-    )
-    monkeypatch.setattr(
-        "shopping_replenisher.runner._build_skipped_active_candidates",
-        lambda histories, active_items, today: [skipped_active_candidate],
     )
 
     def fake_create_task(config: AppConfig, candidate: Candidate) -> str:
@@ -173,7 +168,7 @@ def test_run_pipeline_apply_mode_creates_tasks_and_sends_summary(
     assert calls["todoist_calls"] == ["milk"]
     assert calls["telegram_calls"] == [
         {
-            "candidate_names": ["milk", "bread", "eggs"],
+            "candidate_names": ["milk", "bread"],
             "added_task_ids": ["task-milk"],
         }
     ]

@@ -76,10 +76,6 @@ def _build_run_summary_message(
 
     lines = ["Replenisher", ""]
 
-    if not added_candidates and not optional_candidates:
-        lines.append("Nothing to replenish today.")
-        return "\n".join(lines)
-
     if now_candidates:
         lines.append("Overdue:")
         lines.extend(f"- {c.scored_item.canonical_name}" for c in now_candidates)

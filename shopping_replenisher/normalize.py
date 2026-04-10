@@ -55,9 +55,6 @@ def _singularize_word(word: str) -> str:
     if len(word) <= 3:
         return word
 
-    if word.endswith("es") and len(word) > 4:
-        return word[:-2]
-
     if word.endswith("s") and len(word) > 3:
         return word[:-1]
 
