@@ -27,8 +27,8 @@ Every stage must satisfy all of the following before being marked `Done`:
 
 | Stage | Name | Status | Automated Validation Required | Manual Validation Required | Exit Criteria |
 |---|---|---|---|---|---|
-| 1 | Domain Rules and Examples | Not Started | Tests for normalization and equivalence examples added or drafted where applicable | Review real item names and purchase-history examples to confirm intended rules | Domain rules for normalization, equivalence, and scoring are documented with concrete examples and accepted as the working baseline |
-| 2 | Repo Skeleton and Config Validation | Not Started | Tests for config loading and CLI/config validation behavior | Run `inspect`-style validation against a real `.env` and local DB path | Project skeleton exists with package layout, CLI stub, environment loading, and validation for DB path and project ID |
+| 1 | Domain Rules and Examples | Done | Tests for normalization and equivalence examples added or drafted where applicable | Review real item names and purchase-history examples to confirm intended rules | Domain rules for normalization, equivalence, and scoring are documented with concrete examples and accepted as the working baseline |
+| 2 | Repo Skeleton and Config Validation | Done | Tests for config loading and CLI/config validation behavior | Run `inspect`-style validation against a real `.env` and local DB path | Project skeleton exists with package layout, CLI stub, environment loading, and validation for DB path and project ID |
 | 3 | SQLite Read Layer | Not Started | Tests for DB query functions using fixtures or sample SQLite data | Validate queries against a real Todoist SQLite database and target shopping project | Read functions exist for active tasks, completion events, and completed tasks, returning stable typed data structures |
 | 4 | Normalization and Soft Deduplication | Not Started | Tests cover accents, whitespace, punctuation, singular/plural cases, and source deduplication | Validate grouping and deduplication behavior on real grocery history samples | Deterministic normalization and occurrence deduplication are implemented and produce traceable, conservative results |
 | 5 | Scoring and Selection | Not Started | Tests for feature extraction, confidence, ranking, thresholds, and per-run limits | Review candidate outputs on real history and tune thresholds for false positives | Items can be scored, classified (`now`, `soon`, `optional`), filtered against active duplicates, and ranked for output |
@@ -190,3 +190,5 @@ Use this section to record stage transitions and the evidence for each status ch
 | Date | Stage | Status Change | Notes |
 |---|---|---|---|
 | 2026-04-09 | All | Initialized to `Not Started` | Repository contains documentation only; roadmap created from `DESIGN.md` and `DEVELOPMENT.md` |
+| 2026-04-09 | Stage 1 | `Not Started` → `Done` | `docs/domain_rules.md` created and manually validated |
+| 2026-04-09 | Stage 2 | `Not Started` → `Done` | Package skeleton, config loader, CLI stubs, `.env.example`, tests passing |
