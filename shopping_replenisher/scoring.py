@@ -82,7 +82,7 @@ def _classify_confidence(unique_days: int, gap_stddev: float | None) -> Confiden
 
     if gap_stddev is None:
         return "low"
-    if unique_days >= 6 and gap_stddev <= 3:
+    if unique_days >= 8 and gap_stddev <= 5.5:
         return "high"
     if unique_days >= 4 and gap_stddev <= 7:
         return "medium"
