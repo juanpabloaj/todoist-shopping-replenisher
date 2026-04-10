@@ -3,10 +3,22 @@
 from __future__ import annotations
 
 import argparse
+from datetime import date, datetime
+import json
 from pathlib import Path
+import sqlite3
 from typing import Sequence
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from shopping_replenisher.config import AppConfig, ConfigError, load_config
+from shopping_replenisher.db import (
+    fetch_active_items,
+    fetch_completed_task_rows,
+    fetch_completion_event_rows,
+)
+from shopping_replenisher.history import build_item_histories, build_purchase_occurrences
+from shopping_replenisher.reporter import build_summary_payload, write_report_artifacts
+from shopping_replenisher.selection import select_candidates
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -75,11 +87,34 @@ def _handle_inspect(config: AppConfig) -> int:
 
 
 def _handle_predict(config: AppConfig, output_json: bool) -> int:
-    """Handle the predict subcommand stub."""
+    """Handle the local prediction flow."""
 
-    _ = config
-    _ = output_json
-    print("The 'predict' command is not implemented yet.")
+    with sqlite3.connect(config.todoist_db_path) as conn:
+        active_items = fetch_active_items(conn, config.shopping_project_id)
+        completion_events = fetch_completion_event_rows(conn, config.shopping_project_id)
+        completed_tasks = fetch_completed_task_rows(conn, config.shopping_project_id)
+
+    occurrences = build_purchase_occurrences(completion_events, completed_tasks)
+    histories = build_item_histories(occurrences)
+    today = _resolve_today(config)
+    candidates = select_candidates(
+        histories=histories,
+        active_items=active_items,
+        config=config,
+        today=today,
+    )
+
+    generated_at = _resolve_generated_at(config)
+    artifacts = write_report_artifacts(
+        candidates,
+        reports_root=Path("reports"),
+        generated_at=generated_at,
+    )
+    payload = build_summary_payload(candidates, generated_at=generated_at)
+
+    print(f"Report written to {artifacts.report_dir}")
+    if output_json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
 
 
@@ -92,6 +127,29 @@ def _handle_run(config: AppConfig, apply_mode: bool) -> int:
     return 0
 
 
+def _resolve_today(config: AppConfig) -> date:
+    """Resolve the current date using the configured timezone when valid."""
+
+    if config.timezone == "your_timezone":
+        return date.today()
+
+    try:
+        return datetime.now(ZoneInfo(config.timezone)).date()
+    except ZoneInfoNotFoundError:
+        return date.today()
+
+
+def _resolve_generated_at(config: AppConfig) -> datetime:
+    """Resolve the report timestamp using the configured timezone when valid."""
+
+    if config.timezone == "your_timezone":
+        return datetime.now()
+
+    try:
+        return datetime.now(ZoneInfo(config.timezone))
+    except ZoneInfoNotFoundError:
+        return datetime.now()
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
-
