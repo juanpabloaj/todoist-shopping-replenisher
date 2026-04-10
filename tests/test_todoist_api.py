@@ -22,12 +22,13 @@ def test_create_task_posts_expected_payload(monkeypatch: pytest.MonkeyPatch) -> 
     candidate = _build_candidate()
     captured: dict[str, object] = {}
 
-    def fake_urlopen(http_request: request.Request) -> "_FakeResponse":
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
         headers = {key.lower(): value for key, value in http_request.header_items()}
         captured["url"] = http_request.full_url
         captured["method"] = http_request.get_method()
         captured["authorization"] = headers.get("authorization")
         captured["content_type"] = headers.get("content-type")
+        captured["timeout"] = timeout
         captured["body"] = json.loads(http_request.data.decode("utf-8"))
         return _FakeResponse('{"id": 123}')
 
@@ -40,6 +41,7 @@ def test_create_task_posts_expected_payload(monkeypatch: pytest.MonkeyPatch) -> 
     assert captured["method"] == "POST"
     assert captured["authorization"] == "Bearer token"
     assert captured["content_type"] == "application/json"
+    assert captured["timeout"] == 30
     assert captured["body"] == {
         "content": "milk",
         "project_id": "project-id",
@@ -53,7 +55,8 @@ def test_create_task_applies_optional_prefix(monkeypatch: pytest.MonkeyPatch) ->
     candidate = _build_candidate()
     captured: dict[str, object] = {}
 
-    def fake_urlopen(http_request: request.Request) -> "_FakeResponse":
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
+        captured["timeout"] = timeout
         captured["body"] = json.loads(http_request.data.decode("utf-8"))
         return _FakeResponse('{"id": 456}')
 
@@ -62,6 +65,7 @@ def test_create_task_applies_optional_prefix(monkeypatch: pytest.MonkeyPatch) ->
     task_id = create_task(config, candidate)
 
     assert task_id == "456"
+    assert captured["timeout"] == 30
     assert captured["body"] == {
         "content": "[buy] milk",
         "project_id": "project-id",
@@ -74,7 +78,8 @@ def test_create_task_raises_on_http_error(monkeypatch: pytest.MonkeyPatch) -> No
     config = _build_config(todoist_task_prefix="")
     candidate = _build_candidate()
 
-    def fake_urlopen(http_request: request.Request) -> "_FakeResponse":
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
+        _ = timeout
         raise error.HTTPError(
             url=http_request.full_url,
             code=400,

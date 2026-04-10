@@ -41,11 +41,11 @@ def test_run_pipeline_dry_run_writes_reports_and_can_notify_empty(
     )
     monkeypatch.setattr(
         "shopping_replenisher.runner.build_purchase_occurrences",
-        lambda completion_events, completed_tasks: [],
+        lambda completion_events, completed_tasks, timezone_name=None: [],
     )
     monkeypatch.setattr(
         "shopping_replenisher.runner.build_item_histories",
-        lambda occurrences: {},
+        lambda occurrences, timezone_name=None: {},
     )
     monkeypatch.setattr(
         "shopping_replenisher.runner.select_candidates",
@@ -121,11 +121,11 @@ def test_run_pipeline_apply_mode_creates_tasks_and_sends_summary(
     )
     monkeypatch.setattr(
         "shopping_replenisher.runner.build_purchase_occurrences",
-        lambda completion_events, completed_tasks: [],
+        lambda completion_events, completed_tasks, timezone_name=None: [],
     )
     monkeypatch.setattr(
         "shopping_replenisher.runner.build_item_histories",
-        lambda occurrences: {},
+        lambda occurrences, timezone_name=None: {},
     )
     monkeypatch.setattr(
         "shopping_replenisher.runner.select_candidates",
@@ -199,11 +199,11 @@ def test_run_pipeline_logs_telegram_error_details(
     )
     monkeypatch.setattr(
         "shopping_replenisher.runner.build_purchase_occurrences",
-        lambda completion_events, completed_tasks: [],
+        lambda completion_events, completed_tasks, timezone_name=None: [],
     )
     monkeypatch.setattr(
         "shopping_replenisher.runner.build_item_histories",
-        lambda occurrences: {},
+        lambda occurrences, timezone_name=None: {},
     )
     monkeypatch.setattr(
         "shopping_replenisher.runner.select_candidates",

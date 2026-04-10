@@ -73,6 +73,40 @@ def test_build_purchase_occurrences_deduplicates_medium_match() -> None:
     ]
 
 
+def test_build_purchase_occurrences_deduplicates_medium_match_using_configured_timezone() -> None:
+    """Configured timezone must control same-day matching for UTC-aware rows."""
+
+    completion_events = [
+        CompletionRow(
+            task_id="E-211",
+            content="Yogurt",
+            completed_at=datetime(2026, 4, 10, 23, 59, 55, tzinfo=timezone.utc),
+        )
+    ]
+    completed_tasks = [
+        CompletionRow(
+            task_id="C-778",
+            content="yogurts",
+            completed_at=datetime(2026, 4, 11, 0, 0, 3, tzinfo=timezone.utc),
+        )
+    ]
+
+    occurrences = build_purchase_occurrences(
+        completion_events,
+        completed_tasks,
+        timezone_name="America/Santiago",
+    )
+
+    assert occurrences == [
+        PurchaseOccurrence(
+            task_id="E-211",
+            content="Yogurt",
+            canonical_name="yogurt",
+            completed_at=datetime(2026, 4, 10, 23, 59, 55, tzinfo=timezone.utc),
+        )
+    ]
+
+
 def test_to_local_date_uses_astimezone_for_aware_datetimes() -> None:
     """UTC-aware datetimes must be converted through astimezone before extracting the date.
 
@@ -102,6 +136,17 @@ def test_to_local_date_uses_astimezone_for_aware_datetimes() -> None:
 
     # _to_local_date on a UTC-4 aware datetime must return the UTC-4 calendar date
     assert _to_local_date(dt_local_aware) == date(2026, 4, 9)
+
+
+def test_to_local_date_uses_configured_timezone_when_provided() -> None:
+    """Configured timezone must override the host-local timezone for aware datetimes."""
+
+    from shopping_replenisher.history import _to_local_date
+
+    dt_utc_aware = datetime(2026, 4, 11, 2, 30, 0, tzinfo=timezone.utc)
+
+    assert _to_local_date(dt_utc_aware, "America/Santiago") == date(2026, 4, 10)
+    assert _to_local_date(dt_utc_aware, "UTC") == date(2026, 4, 11)
 
 
 def test_build_purchase_occurrences_keeps_same_day_rows_when_delta_is_too_large() -> None:

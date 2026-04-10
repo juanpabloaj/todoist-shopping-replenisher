@@ -50,8 +50,12 @@ def run_pipeline(config: AppConfig, apply_mode: bool) -> RunResult:
         logger.error("failed reading Todoist SQLite db_path=%s", config.todoist_db_path)
         raise
 
-    occurrences = build_purchase_occurrences(completion_events, completed_tasks)
-    histories = build_item_histories(occurrences)
+    occurrences = build_purchase_occurrences(
+        completion_events,
+        completed_tasks,
+        timezone_name=config.timezone,
+    )
+    histories = build_item_histories(occurrences, timezone_name=config.timezone)
     today = _resolve_today(config)
     candidates = select_candidates(
         histories=histories,

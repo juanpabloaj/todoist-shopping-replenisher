@@ -31,11 +31,12 @@ def test_send_run_summary_posts_expected_message(monkeypatch: pytest.MonkeyPatch
     ]
     captured: dict[str, object] = {}
 
-    def fake_urlopen(http_request: request.Request) -> "_FakeResponse":
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
         headers = {key.lower(): value for key, value in http_request.header_items()}
         captured["url"] = http_request.full_url
         captured["method"] = http_request.get_method()
         captured["content_type"] = headers.get("content-type")
+        captured["timeout"] = timeout
         captured["body"] = json.loads(http_request.data.decode("utf-8"))
         return _FakeResponse('{"ok": true, "result": {"message_id": 1}}')
 
@@ -46,6 +47,7 @@ def test_send_run_summary_posts_expected_message(monkeypatch: pytest.MonkeyPatch
     assert captured["url"] == "https://api.telegram.org/botbot-token/sendMessage"
     assert captured["method"] == "POST"
     assert captured["content_type"] == "application/json"
+    assert captured["timeout"] == 30
     assert captured["body"] == {
         "chat_id": "chat-id",
         "text": "\n".join(
@@ -69,7 +71,8 @@ def test_send_run_summary_raises_on_http_error(monkeypatch: pytest.MonkeyPatch) 
 
     config = _build_config()
 
-    def fake_urlopen(http_request: request.Request) -> "_FakeResponse":
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
+        _ = timeout
         raise error.HTTPError(
             url=http_request.full_url,
             code=500,

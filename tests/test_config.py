@@ -67,3 +67,21 @@ def test_load_config_normalizes_ignored_items(monkeypatch: pytest.MonkeyPatch) -
     config = load_config(dotenv_path="tests/does-not-exist.env")
 
     assert config.ignored_items == frozenset({"compra", "coca cola", "egg"})
+
+
+def test_load_config_rejects_invalid_min_confidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Invalid confidence levels should fail during config loading."""
+
+    monkeypatch.setenv("TODOIST_DB_PATH", "/tmp/todoist.db")
+    monkeypatch.setenv("TODOIST_API_TOKEN", "token")
+    monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat-id")
+    monkeypatch.setenv("MIN_CONFIDENCE", "urgent")
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config(dotenv_path="tests/does-not-exist.env")
+
+    assert "MIN_CONFIDENCE" in str(exc_info.value)

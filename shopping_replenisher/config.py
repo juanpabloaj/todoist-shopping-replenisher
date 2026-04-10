@@ -42,6 +42,7 @@ REQUIRED_ENV_VARS: tuple[str, ...] = (
     "TELEGRAM_BOT_TOKEN",
     "TELEGRAM_CHAT_ID",
 )
+ALLOWED_CONFIDENCE_LEVELS: frozenset[str] = frozenset({"low", "medium", "high"})
 
 
 def load_config(dotenv_path: str | Path | None = None) -> AppConfig:
@@ -54,6 +55,11 @@ def load_config(dotenv_path: str | Path | None = None) -> AppConfig:
         missing_list = ", ".join(sorted(missing_vars))
         raise ConfigError(f"Missing required environment variables: {missing_list}")
 
+    min_confidence = _get_str("MIN_CONFIDENCE", default="medium")
+    if min_confidence not in ALLOWED_CONFIDENCE_LEVELS:
+        allowed_levels = ", ".join(sorted(ALLOWED_CONFIDENCE_LEVELS))
+        raise ConfigError(f"Environment variable MIN_CONFIDENCE must be one of: {allowed_levels}.")
+
     return AppConfig(
         todoist_db_path=Path(_get_required_str("TODOIST_DB_PATH")),
         todoist_api_token=_get_required_str("TODOIST_API_TOKEN"),
@@ -63,7 +69,7 @@ def load_config(dotenv_path: str | Path | None = None) -> AppConfig:
         auto_apply=_get_bool("AUTO_APPLY", default=False),
         max_items_per_run=_get_int("MAX_ITEMS_PER_RUN", default=5),
         min_pattern_occurrences=_get_int("MIN_PATTERN_OCCURRENCES", default=4),
-        min_confidence=_get_str("MIN_CONFIDENCE", default="medium"),
+        min_confidence=min_confidence,
         buy_soon_days=_get_int("BUY_SOON_DAYS", default=7),
         ignored_items=_get_ignored_items("IGNORED_ITEMS"),
         todoist_task_prefix=_get_str("TODOIST_TASK_PREFIX", default=""),

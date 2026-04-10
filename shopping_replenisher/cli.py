@@ -123,8 +123,12 @@ def _build_prediction_candidates(config: AppConfig) -> list[Candidate]:
         completion_events = fetch_completion_event_rows(conn, config.shopping_project_id)
         completed_tasks = fetch_completed_task_rows(conn, config.shopping_project_id)
 
-    occurrences = build_purchase_occurrences(completion_events, completed_tasks)
-    histories = build_item_histories(occurrences)
+    occurrences = build_purchase_occurrences(
+        completion_events,
+        completed_tasks,
+        timezone_name=config.timezone,
+    )
+    histories = build_item_histories(occurrences, timezone_name=config.timezone)
     today = _resolve_today(config)
     candidates = select_candidates(
         histories=histories,

@@ -52,11 +52,11 @@ def test_build_prediction_candidates_runs_local_pipeline(monkeypatch: pytest.Mon
     )
     monkeypatch.setattr(
         "shopping_replenisher.cli.build_purchase_occurrences",
-        lambda completion_events, completed_tasks: ["occurrences"],
+        lambda completion_events, completed_tasks, timezone_name=None: ["occurrences"],
     )
     monkeypatch.setattr(
         "shopping_replenisher.cli.build_item_histories",
-        lambda occurrences: {"milk": "history"},
+        lambda occurrences, timezone_name=None: {"milk": "history"},
     )
     monkeypatch.setattr(
         "shopping_replenisher.cli._resolve_today",

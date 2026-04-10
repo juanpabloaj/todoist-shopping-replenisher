@@ -13,6 +13,9 @@ class TelegramAPIError(RuntimeError):
     """Raised when the Telegram Bot API returns an invalid or failed response."""
 
 
+REQUEST_TIMEOUT_SECONDS = 30
+
+
 def send_run_summary(
     config: AppConfig,
     candidates: list[Candidate],
@@ -43,7 +46,7 @@ def _send_message(config: AppConfig, message: str) -> None:
     )
 
     try:
-        with request.urlopen(http_request) as response:
+        with request.urlopen(http_request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             response_body = response.read().decode("utf-8")
     except error.HTTPError as exc:
         error_body = exc.read().decode("utf-8", errors="replace")

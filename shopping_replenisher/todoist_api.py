@@ -11,6 +11,7 @@ from shopping_replenisher.selection import Candidate
 
 
 TODOIST_TASKS_URL = "https://api.todoist.com/api/v1/tasks"
+REQUEST_TIMEOUT_SECONDS = 30
 
 
 class TodoistAPIError(RuntimeError):
@@ -38,7 +39,7 @@ def create_task(config: AppConfig, candidate: Candidate) -> str:
     )
 
     try:
-        with request.urlopen(http_request) as response:
+        with request.urlopen(http_request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             response_body = response.read().decode("utf-8")
     except error.HTTPError as exc:
         error_body = exc.read().decode("utf-8", errors="replace")
