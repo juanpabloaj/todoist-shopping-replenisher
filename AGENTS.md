@@ -30,6 +30,16 @@ Use Python 3.11+ with full type hints on all function signatures. Keep code, com
 
 Use `pytest`. Add or update tests for every behavior change, especially around Todoist/Telegram side effects, config parsing, and SQLite schema assumptions. Test files should follow `tests/test_<module>.py`. Prefer fixtures and mocked HTTP calls over real network access.
 
+## Review Standards
+
+Do not treat "tests pass" as sufficient closure. Each completed change should include:
+
+- a happy-path test
+- a failure-path or invalid-input test
+- a direct regression test for any real bug found during validation
+
+When a real bug is discovered, search for the same class of issue across the repo before closing the fix. Examples: timezone consistency, env-var validation, duplicated pipeline logic, and external HTTP client behavior. Any new external integration must ship with explicit timeouts, useful error wrapping, and logs that are actionable in cron or unattended runs.
+
 ## Commit & Pull Request Guidelines
 
 Recent history uses short imperative commit messages such as `implement stage 11: logging, hardening, and operational quality`. Follow that style: lead with the action, then scope if useful. Pull requests should include:
