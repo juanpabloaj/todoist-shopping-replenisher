@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+import logging
 from pathlib import Path
 
 import pytest
@@ -172,6 +173,68 @@ def test_run_pipeline_apply_mode_creates_tasks_and_sends_summary(
             "added_task_ids": ["task-milk"],
         }
     ]
+
+
+def test_run_pipeline_logs_telegram_error_details(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Telegram failures should log the exception detail for diagnosis."""
+
+    config = _build_config()
+    report_artifacts = _build_report_artifacts()
+    candidates = [_build_candidate("milk", "now", True, is_active=False)]
+
+    monkeypatch.setattr("shopping_replenisher.runner.sqlite3.connect", _fake_connect)
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_active_items", lambda conn, project_id: []
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_completion_event_rows",
+        lambda conn, project_id: [],
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_completed_task_rows",
+        lambda conn, project_id: [],
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.build_purchase_occurrences",
+        lambda completion_events, completed_tasks: [],
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.build_item_histories",
+        lambda occurrences: {},
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.select_candidates",
+        lambda histories, active_items, config, today: candidates,
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.write_report_artifacts",
+        lambda candidates, reports_root, generated_at: report_artifacts,
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.create_task",
+        lambda config, candidate: "task-milk",
+    )
+
+    def fake_send_run_summary(
+        config: AppConfig, summary_candidates: list[Candidate], added_task_ids: list[str]
+    ) -> None:
+        _ = config
+        _ = summary_candidates
+        _ = added_task_ids
+        raise __import__(
+            "shopping_replenisher.telegram", fromlist=["TelegramAPIError"]
+        ).TelegramAPIError("telegram boom")
+
+    monkeypatch.setattr("shopping_replenisher.runner.send_run_summary", fake_send_run_summary)
+
+    with caplog.at_level(logging.ERROR):
+        result = run_pipeline(config, apply_mode=True)
+
+    assert result.added_task_ids == ["task-milk"]
+    assert "telegram notification failed error=telegram boom" in caplog.text
 
 
 def _build_config() -> AppConfig:

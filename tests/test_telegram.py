@@ -12,7 +12,11 @@ import pytest
 from shopping_replenisher.config import AppConfig
 from shopping_replenisher.scoring import ScoredItem
 from shopping_replenisher.selection import Candidate
-from shopping_replenisher.telegram import TelegramAPIError, send_run_summary
+from shopping_replenisher.telegram import (
+    TelegramAPIError,
+    _build_run_summary_message,
+    send_run_summary,
+)
 
 
 def test_send_run_summary_posts_expected_message(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -80,6 +84,12 @@ def test_send_run_summary_raises_on_http_error(monkeypatch: pytest.MonkeyPatch) 
         send_run_summary(config, [], added_task_ids=[])
 
     assert "500" in str(exc_info.value)
+
+
+def test_build_run_summary_message_for_empty_input_is_minimal() -> None:
+    """Empty input should produce only the Telegram header."""
+
+    assert _build_run_summary_message([], []) == "Replenisher"
 
 
 def _build_config() -> AppConfig:

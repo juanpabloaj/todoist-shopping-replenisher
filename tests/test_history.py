@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from shopping_replenisher.db import CompletionRow
 from shopping_replenisher.history import (
@@ -71,6 +71,37 @@ def test_build_purchase_occurrences_deduplicates_medium_match() -> None:
             completed_at=datetime.fromisoformat("2026-04-02T18:30:00"),
         )
     ]
+
+
+def test_to_local_date_uses_astimezone_for_aware_datetimes() -> None:
+    """UTC-aware datetimes must be converted through astimezone before extracting the date.
+
+    The bug this guards: calling .date() directly on a UTC-aware datetime gives the UTC
+    calendar date, which differs from the local calendar date for any timezone behind UTC.
+    _to_local_date must call .astimezone() first.
+
+    We verify the contract indirectly: a UTC datetime at a fixed offset yields the correct
+    local date for that offset, which differs from the raw UTC date when the offset crosses
+    a calendar boundary.
+    """
+    from datetime import timedelta
+    from shopping_replenisher.history import _to_local_date
+
+    utc_minus_4 = timezone(timedelta(hours=-4))
+    # 2026-04-10 01:30:00 UTC → 2026-04-09 21:30:00 in UTC-4 → local date is April 9
+    dt_utc_aware = datetime(2026, 4, 10, 1, 30, 0, tzinfo=timezone.utc)
+    dt_local_aware = dt_utc_aware.astimezone(utc_minus_4)
+
+    # The UTC date is April 10; the UTC-4 local date is April 9
+    assert dt_utc_aware.date() == date(2026, 4, 10)
+    assert dt_local_aware.date() == date(2026, 4, 9)
+
+    # _to_local_date on a naive datetime must return the naive date unchanged
+    dt_naive = datetime(2026, 4, 10, 1, 30, 0)
+    assert _to_local_date(dt_naive) == date(2026, 4, 10)
+
+    # _to_local_date on a UTC-4 aware datetime must return the UTC-4 calendar date
+    assert _to_local_date(dt_local_aware) == date(2026, 4, 9)
 
 
 def test_build_purchase_occurrences_keeps_same_day_rows_when_delta_is_too_large() -> None:

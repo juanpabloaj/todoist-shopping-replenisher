@@ -27,6 +27,12 @@ from shopping_replenisher.normalize import normalize
         ("quesos", "queso"),
         ("egg", "egg"),
         ("eggs", "egg"),
+        # Spanish plurals ending in -es: strip only the final s (conservative)
+        # "papeles" → "papele" is imperfect but safe — no incorrect merge
+        ("tomates", "tomate"),
+        ("clases", "clase"),
+        ("luces", "luce"),
+        ("papeles", "papele"),
     ],
 )
 def test_normalize_matches_documented_examples(raw_text: str, expected: str) -> None:
