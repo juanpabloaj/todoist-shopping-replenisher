@@ -46,19 +46,15 @@ def test_send_run_summary_posts_expected_message(monkeypatch: pytest.MonkeyPatch
         "chat_id": "chat-id",
         "text": "\n".join(
             [
-                "Shopping replenisher summary",
+                "Replenisher",
                 "",
-                "Candidates found: 4",
+                "Overdue:",
+                "- milk",
                 "",
-                "Items added:",
-                "- milk (now)",
-                "- eggs (soon)",
+                "Coming up:",
+                "- eggs",
                 "",
-                "Optional items:",
-                "- jugo",
-                "",
-                "Skipped already active:",
-                "- bread",
+                "On the radar: jugo",
             ]
         ),
     }

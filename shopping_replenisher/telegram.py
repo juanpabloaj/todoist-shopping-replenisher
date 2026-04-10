@@ -81,54 +81,37 @@ def _build_run_summary_message(
     *,
     apply_mode: bool = False,
 ) -> str:
-    """Build a plain-text summary for Telegram."""
+    """Build a human-friendly plain-text summary for Telegram."""
 
-    auto_add_candidates = [candidate for candidate in candidates if candidate.auto_add]
-    added_candidates = auto_add_candidates[: len(added_task_ids)]
+    auto_add_candidates = [c for c in candidates if c.auto_add and not c.scored_item.is_active]
+    display_candidates = auto_add_candidates[: len(added_task_ids)] if apply_mode else auto_add_candidates
+
+    now_candidates = [c for c in display_candidates if c.candidate_class == "now"]
+    soon_candidates = [c for c in display_candidates if c.candidate_class == "soon"]
     optional_candidates = [
-        candidate
-        for candidate in candidates
-        if candidate.candidate_class == "optional" and not candidate.scored_item.is_active
-    ]
-    skipped_active_candidates = [
-        candidate for candidate in candidates if candidate.scored_item.is_active
+        c for c in candidates
+        if c.candidate_class == "optional" and not c.scored_item.is_active
     ]
 
-    if apply_mode:
-        add_section_label = "Items added:"
-        display_candidates = added_candidates
-    else:
-        add_section_label = "Items to add (dry-run):"
-        display_candidates = auto_add_candidates
+    dry_run_suffix = " (dry-run)" if not apply_mode else ""
+    lines = [f"Replenisher{dry_run_suffix}", ""]
 
-    lines = [
-        "Shopping replenisher summary",
-        "",
-        f"Candidates found: {len(candidates)}",
-        "",
-        add_section_label,
-    ]
-    if display_candidates:
-        lines.extend(
-            f"- {candidate.scored_item.canonical_name} ({candidate.candidate_class})"
-            for candidate in display_candidates
-        )
-    else:
-        lines.append("- none")
+    if not display_candidates and not optional_candidates:
+        lines.append("Nothing to replenish today.")
+        return "\n".join(lines)
 
-    lines.extend(["", "Optional items:"])
+    if now_candidates:
+        lines.append("Overdue:")
+        lines.extend(f"- {c.scored_item.canonical_name}" for c in now_candidates)
+        lines.append("")
+
+    if soon_candidates:
+        lines.append("Coming up:")
+        lines.extend(f"- {c.scored_item.canonical_name}" for c in soon_candidates)
+        lines.append("")
+
     if optional_candidates:
-        lines.extend(f"- {candidate.scored_item.canonical_name}" for candidate in optional_candidates)
-    else:
-        lines.append("- none")
+        names = ", ".join(c.scored_item.canonical_name for c in optional_candidates)
+        lines.append(f"On the radar: {names}")
 
-    lines.extend(["", "Skipped already active:"])
-    if skipped_active_candidates:
-        lines.extend(
-            f"- {candidate.scored_item.canonical_name}"
-            for candidate in skipped_active_candidates
-        )
-    else:
-        lines.append("- none")
-
-    return "\n".join(lines)
+    return "\n".join(lines).rstrip()
