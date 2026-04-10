@@ -57,7 +57,7 @@ A Telegram message is sent only when `run --apply` successfully adds at least on
 
 ## Local DB Freshness
 
-The system reads a local SQLite snapshot of Todoist data maintained by `todoist-local-sync`. If that sync process is not running, predictions will be based on stale data.
+The system reads a local SQLite snapshot of Todoist data maintained by [todoist-local-sync](https://github.com/juanpabloaj/todoist-local-sync). If that sync process is not running, predictions will be based on stale data.
 
 - `todoist-local-sync` must be running and its cron entry must be active
 - The replenisher cron entry is scheduled 5 minutes after the sync to guarantee a fresh snapshot

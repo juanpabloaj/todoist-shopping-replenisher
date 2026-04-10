@@ -25,6 +25,7 @@ Python tool for analyzing the purchase history of a Todoist shopping project, id
 - Python 3.11+
 - `uv` for environment and dependency management
 - A `.env` file with the required variables
+- A local Todoist SQLite database, kept in sync by [todoist-local-sync](https://github.com/juanpabloaj/todoist-local-sync)
 
 ## Setup
 
