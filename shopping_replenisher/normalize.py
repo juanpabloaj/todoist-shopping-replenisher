@@ -17,7 +17,6 @@ def normalize(text: str) -> str:
     normalized = _remove_accents(normalized)
     normalized = _replace_trivial_punctuation(normalized)
     normalized = _collapse_whitespace(normalized)
-    normalized = _normalize_known_variants(normalized)
     normalized = _apply_light_plural_heuristic(normalized)
     normalized = _collapse_whitespace(normalized)
     return normalized
@@ -41,14 +40,6 @@ def _collapse_whitespace(text: str) -> str:
     """Trim outer whitespace and collapse internal runs."""
 
     return _WHITESPACE_PATTERN.sub(" ", text).strip()
-
-
-def _normalize_known_variants(text: str) -> str:
-    """Normalize explicit known variants listed in the design."""
-
-    if text == "coca cola":
-        return "coca cola"
-    return text
 
 
 def _apply_light_plural_heuristic(text: str) -> str:

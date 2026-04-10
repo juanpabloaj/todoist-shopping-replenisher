@@ -170,9 +170,8 @@ def _build_skipped_active_candidates(
 def _resolve_today(config: AppConfig) -> date:
     """Resolve the current date using the configured timezone when valid."""
 
-    if config.timezone == "your_timezone":
+    if config.timezone is None:
         return date.today()
-
     try:
         return datetime.now(ZoneInfo(config.timezone)).date()
     except ZoneInfoNotFoundError:
@@ -182,9 +181,8 @@ def _resolve_today(config: AppConfig) -> date:
 def _resolve_generated_at(config: AppConfig) -> datetime:
     """Resolve the report timestamp using the configured timezone when valid."""
 
-    if config.timezone == "your_timezone":
+    if config.timezone is None:
         return datetime.now()
-
     try:
         return datetime.now(ZoneInfo(config.timezone))
     except ZoneInfoNotFoundError:

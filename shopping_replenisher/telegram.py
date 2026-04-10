@@ -24,19 +24,6 @@ def send_run_summary(
     _send_message(config, message)
 
 
-def send_error(config: AppConfig, error_message: str) -> None:
-    """Send an error notification to the configured Telegram chat."""
-
-    message = "\n".join(
-        [
-            "Shopping replenisher error",
-            "",
-            error_message,
-        ]
-    )
-    _send_message(config, message)
-
-
 def _send_message(config: AppConfig, message: str) -> None:
     """Send a plain-text Telegram message."""
 

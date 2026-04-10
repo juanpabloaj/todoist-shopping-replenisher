@@ -26,17 +26,13 @@ class AppConfig:
     telegram_chat_id: str
     auto_apply: bool
     max_items_per_run: int
-    prediction_window_days: int
     min_pattern_occurrences: int
     min_confidence: str
     buy_soon_days: int
     ignored_items: frozenset[str]
-    enable_completion_events_backfill: bool
     todoist_task_prefix: str
     log_level: str
-    timezone: str
-    overrule_active_duplicates: bool
-    forgotten_ratio_threshold: float
+    timezone: str | None
 
 
 REQUIRED_ENV_VARS: tuple[str, ...] = (
@@ -66,20 +62,13 @@ def load_config(dotenv_path: str | Path | None = None) -> AppConfig:
         telegram_chat_id=_get_required_str("TELEGRAM_CHAT_ID"),
         auto_apply=_get_bool("AUTO_APPLY", default=False),
         max_items_per_run=_get_int("MAX_ITEMS_PER_RUN", default=5),
-        prediction_window_days=_get_int("PREDICTION_WINDOW_DAYS", default=7),
         min_pattern_occurrences=_get_int("MIN_PATTERN_OCCURRENCES", default=4),
         min_confidence=_get_str("MIN_CONFIDENCE", default="medium"),
         buy_soon_days=_get_int("BUY_SOON_DAYS", default=7),
         ignored_items=_get_ignored_items("IGNORED_ITEMS"),
-        enable_completion_events_backfill=_get_bool(
-            "ENABLE_COMPLETION_EVENTS_BACKFILL",
-            default=True,
-        ),
         todoist_task_prefix=_get_str("TODOIST_TASK_PREFIX", default=""),
         log_level=_get_str("LOG_LEVEL", default="INFO"),
-        timezone=_get_str("TIMEZONE", default="your_timezone"),
-        overrule_active_duplicates=_get_bool("OVERRULE_ACTIVE_DUPLICATES", default=False),
-        forgotten_ratio_threshold=_get_float("FORGOTTEN_RATIO_THRESHOLD", default=1.75),
+        timezone=_get_optional_str("TIMEZONE"),
     )
 
 
@@ -99,6 +88,15 @@ def _get_str(name: str, default: str) -> str:
     return value.strip()
 
 
+def _get_optional_str(name: str) -> str | None:
+    """Read a string environment variable, returning None if unset or empty."""
+
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return None
+    return value.strip()
+
+
 def _get_int(name: str, default: int) -> int:
     """Read an integer environment variable with a default."""
 
@@ -109,18 +107,6 @@ def _get_int(name: str, default: int) -> int:
         return int(value)
     except ValueError as exc:
         raise ConfigError(f"Environment variable {name} must be an integer.") from exc
-
-
-def _get_float(name: str, default: float) -> float:
-    """Read a float environment variable with a default."""
-
-    value = os.getenv(name)
-    if value is None or not value.strip():
-        return default
-    try:
-        return float(value)
-    except ValueError as exc:
-        raise ConfigError(f"Environment variable {name} must be a float.") from exc
 
 
 def _get_bool(name: str, default: bool) -> bool:

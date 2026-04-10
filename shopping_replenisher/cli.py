@@ -140,7 +140,7 @@ def _handle_run(config: AppConfig, apply_mode: bool) -> int:
 def _resolve_today(config: AppConfig) -> date:
     """Resolve the current date using the configured timezone when valid."""
 
-    if config.timezone == "your_timezone":
+    if config.timezone is None:
         return date.today()
 
     try:
@@ -152,7 +152,7 @@ def _resolve_today(config: AppConfig) -> date:
 def _resolve_generated_at(config: AppConfig) -> datetime:
     """Resolve the report timestamp using the configured timezone when valid."""
 
-    if config.timezone == "your_timezone":
+    if config.timezone is None:
         return datetime.now()
 
     try:

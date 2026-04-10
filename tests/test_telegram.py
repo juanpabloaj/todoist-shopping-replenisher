@@ -12,7 +12,7 @@ import pytest
 from shopping_replenisher.config import AppConfig
 from shopping_replenisher.scoring import ScoredItem
 from shopping_replenisher.selection import Candidate
-from shopping_replenisher.telegram import TelegramAPIError, send_error, send_run_summary
+from shopping_replenisher.telegram import TelegramAPIError, send_run_summary
 
 
 def test_send_run_summary_posts_expected_message(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -60,26 +60,6 @@ def test_send_run_summary_posts_expected_message(monkeypatch: pytest.MonkeyPatch
     }
 
 
-def test_send_error_posts_expected_message(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Errors should be posted as simple text notifications."""
-
-    config = _build_config()
-    captured: dict[str, object] = {}
-
-    def fake_urlopen(http_request: request.Request) -> "_FakeResponse":
-        captured["body"] = json.loads(http_request.data.decode("utf-8"))
-        return _FakeResponse('{"ok": true, "result": {"message_id": 2}}')
-
-    monkeypatch.setattr("shopping_replenisher.telegram.request.urlopen", fake_urlopen)
-
-    send_error(config, "Something failed.")
-
-    assert captured["body"] == {
-        "chat_id": "chat-id",
-        "text": "Shopping replenisher error\n\nSomething failed.",
-    }
-
-
 def test_send_run_summary_raises_on_http_error(monkeypatch: pytest.MonkeyPatch) -> None:
     """Telegram HTTP failures should be wrapped in a TelegramAPIError."""
 
@@ -113,17 +93,13 @@ def _build_config() -> AppConfig:
         telegram_chat_id="chat-id",
         auto_apply=False,
         max_items_per_run=5,
-        prediction_window_days=7,
         min_pattern_occurrences=4,
         min_confidence="medium",
         buy_soon_days=7,
         ignored_items=frozenset(),
-        enable_completion_events_backfill=True,
         todoist_task_prefix="",
         log_level="INFO",
-        timezone="your_timezone",
-        overrule_active_duplicates=False,
-        forgotten_ratio_threshold=1.75,
+        timezone=None,
     )
 
 

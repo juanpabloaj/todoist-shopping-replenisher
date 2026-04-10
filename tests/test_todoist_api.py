@@ -102,17 +102,13 @@ def _build_config(*, todoist_task_prefix: str) -> AppConfig:
         telegram_chat_id="chat-id",
         auto_apply=False,
         max_items_per_run=5,
-        prediction_window_days=7,
         min_pattern_occurrences=4,
         min_confidence="medium",
         buy_soon_days=7,
         ignored_items=frozenset(),
-        enable_completion_events_backfill=True,
         todoist_task_prefix=todoist_task_prefix,
         log_level="INFO",
-        timezone="your_timezone",
-        overrule_active_duplicates=False,
-        forgotten_ratio_threshold=1.75,
+        timezone=None,
     )
 
 
