@@ -86,8 +86,11 @@ def _handle_inspect(config: AppConfig) -> int:
     """Handle the inspect subcommand."""
 
     logger.info("configuration is valid")
-    logger.info("TODOIST_DB_PATH=%s", config.todoist_db_path)
-    logger.info("SHOPPING_PROJECT_ID=%s", config.shopping_project_id)
+    logger.info("TODOIST_DB_PATH=configured")
+    logger.info("SHOPPING_PROJECT_ID=configured")
+    logger.info("TODOIST_API_TOKEN=configured")
+    logger.info("TELEGRAM_BOT_TOKEN=configured")
+    logger.info("TELEGRAM_CHAT_ID=configured")
     logger.info("AUTO_APPLY=%s", config.auto_apply)
     logger.info("LOG_LEVEL=%s", config.log_level)
     return 0
