@@ -56,7 +56,6 @@ def test_send_run_summary_posts_expected_message(monkeypatch: pytest.MonkeyPatch
                 "",
                 "Optional items:",
                 "- jugo",
-                "- bread",
                 "",
                 "Skipped already active:",
                 "- bread",

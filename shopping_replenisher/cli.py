@@ -18,6 +18,7 @@ from shopping_replenisher.db import (
 )
 from shopping_replenisher.history import build_item_histories, build_purchase_occurrences
 from shopping_replenisher.reporter import build_summary_payload, write_report_artifacts
+from shopping_replenisher.runner import run_pipeline
 from shopping_replenisher.selection import select_candidates
 
 
@@ -97,14 +98,13 @@ def _handle_predict(config: AppConfig, output_json: bool) -> int:
     occurrences = build_purchase_occurrences(completion_events, completed_tasks)
     histories = build_item_histories(occurrences)
     today = _resolve_today(config)
+    generated_at = _resolve_generated_at(config)
     candidates = select_candidates(
         histories=histories,
         active_items=active_items,
         config=config,
         today=today,
     )
-
-    generated_at = _resolve_generated_at(config)
     artifacts = write_report_artifacts(
         candidates,
         reports_root=Path("reports"),
@@ -119,11 +119,13 @@ def _handle_predict(config: AppConfig, output_json: bool) -> int:
 
 
 def _handle_run(config: AppConfig, apply_mode: bool) -> int:
-    """Handle the run subcommand stub."""
+    """Handle the full pipeline command."""
 
-    _ = config
-    _ = apply_mode
-    print("The 'run' command is not implemented yet.")
+    result = run_pipeline(config, apply_mode=apply_mode)
+    print(f"Report written to {result.report_artifacts.report_dir}")
+    print(f"Apply mode: {result.apply_mode}")
+    print(f"Candidates: {len(result.candidates)}")
+    print(f"Added tasks: {len(result.added_task_ids)}")
     return 0
 
 
@@ -149,6 +151,8 @@ def _resolve_generated_at(config: AppConfig) -> datetime:
         return datetime.now(ZoneInfo(config.timezone))
     except ZoneInfoNotFoundError:
         return datetime.now()
+
+
 
 
 if __name__ == "__main__":

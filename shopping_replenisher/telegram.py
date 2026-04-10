@@ -79,7 +79,9 @@ def _build_run_summary_message(candidates: list[Candidate], added_task_ids: list
     auto_add_candidates = [candidate for candidate in candidates if candidate.auto_add]
     added_candidates = auto_add_candidates[: len(added_task_ids)]
     optional_candidates = [
-        candidate for candidate in candidates if candidate.candidate_class == "optional"
+        candidate
+        for candidate in candidates
+        if candidate.candidate_class == "optional" and not candidate.scored_item.is_active
     ]
     skipped_active_candidates = [
         candidate for candidate in candidates if candidate.scored_item.is_active
