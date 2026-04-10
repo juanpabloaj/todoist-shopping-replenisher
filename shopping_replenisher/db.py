@@ -33,6 +33,8 @@ def fetch_active_items(conn: sqlite3.Connection, project_id: str) -> list[Active
             content
         FROM tasks
         WHERE project_id = ?
+          AND checked = 0
+          AND is_deleted = 0
     """
     rows = conn.execute(query, (project_id,)).fetchall()
     return [

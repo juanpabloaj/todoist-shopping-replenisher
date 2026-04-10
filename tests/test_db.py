@@ -26,7 +26,9 @@ def sqlite_conn() -> sqlite3.Connection:
         CREATE TABLE tasks (
             id TEXT NOT NULL,
             project_id TEXT NOT NULL,
-            content TEXT NOT NULL
+            content TEXT NOT NULL,
+            checked INTEGER NOT NULL DEFAULT 0,
+            is_deleted INTEGER NOT NULL DEFAULT 0
         );
 
         CREATE TABLE completion_events (
@@ -46,11 +48,13 @@ def sqlite_conn() -> sqlite3.Connection:
     )
 
     conn.executemany(
-        "INSERT INTO tasks (id, project_id, content) VALUES (?, ?, ?)",
+        "INSERT INTO tasks (id, project_id, content, checked, is_deleted) VALUES (?, ?, ?, ?, ?)",
         [
-            ("active-1", "shopping-project", "Milk"),
-            ("active-2", "shopping-project", "Eggs"),
-            ("active-3", "other-project", "Should Not Appear"),
+            ("active-1", "shopping-project", "Milk", 0, 0),
+            ("active-2", "shopping-project", "Eggs", 0, 0),
+            ("active-3", "other-project", "Should Not Appear", 0, 0),
+            ("active-4", "shopping-project", "Checked Item", 1, 0),
+            ("active-5", "shopping-project", "Deleted Item", 0, 1),
         ],
     )
     conn.executemany(
