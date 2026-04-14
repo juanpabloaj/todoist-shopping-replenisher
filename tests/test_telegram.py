@@ -51,12 +51,12 @@ def test_send_run_summary_posts_expected_message(monkeypatch: pytest.MonkeyPatch
                 "Replenisher",
                 "",
                 "Overdue:",
-                "- milk",
+                "- Milk",
                 "",
                 "Coming up:",
-                "- eggs",
+                "- Eggs",
                 "",
-                "On the radar: jugo",
+                "On the radar: Jugo",
             ]
         ),
     }
@@ -154,6 +154,7 @@ def _build_candidate(
     return Candidate(
         scored_item=ScoredItem(
             canonical_name=canonical_name,
+            display_name=canonical_name.title(),
             original_names={canonical_name.title()},
             occurrence_count=4,
             unique_days=4,

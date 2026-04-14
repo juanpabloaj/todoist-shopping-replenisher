@@ -62,7 +62,7 @@ def create_task(config: AppConfig, candidate: Candidate) -> str:
 def _build_task_content(config: AppConfig, candidate: Candidate) -> str:
     """Build the Todoist task content from config and candidate data."""
 
-    item_name = candidate.scored_item.canonical_name
+    item_name = candidate.scored_item.display_name
     if not config.todoist_task_prefix:
         return item_name
     return f"{config.todoist_task_prefix}{item_name}"

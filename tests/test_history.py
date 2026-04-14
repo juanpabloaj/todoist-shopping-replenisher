@@ -285,6 +285,7 @@ def test_build_item_histories_groups_by_canonical_name() -> None:
 
     assert histories["coca cola"] == ItemHistory(
         canonical_name="coca cola",
+        display_name="coca-cola",
         original_names={"Coca Cola", "coca-cola"},
         occurrences=[
             PurchaseOccurrence(
@@ -304,6 +305,7 @@ def test_build_item_histories_groups_by_canonical_name() -> None:
     )
     assert histories["milk"] == ItemHistory(
         canonical_name="milk",
+        display_name="Milk",
         original_names={"Milk"},
         occurrences=[
             PurchaseOccurrence(

@@ -159,6 +159,7 @@ def _build_history(
     occurrence_days = [occurrence.completed_at.date() for occurrence in occurrences]
     return ItemHistory(
         canonical_name=canonical_name,
+        display_name=contents[-1],
         original_names=set(contents),
         occurrences=occurrences,
         occurrence_days=occurrence_days,

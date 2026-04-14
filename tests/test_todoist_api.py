@@ -43,7 +43,7 @@ def test_create_task_posts_expected_payload(monkeypatch: pytest.MonkeyPatch) -> 
     assert captured["content_type"] == "application/json"
     assert captured["timeout"] == 30
     assert captured["body"] == {
-        "content": "milk",
+        "content": "Milk",
         "project_id": "project-id",
     }
 
@@ -67,7 +67,7 @@ def test_create_task_applies_optional_prefix(monkeypatch: pytest.MonkeyPatch) ->
     assert task_id == "456"
     assert captured["timeout"] == 30
     assert captured["body"] == {
-        "content": "[buy] milk",
+        "content": "[buy] Milk",
         "project_id": "project-id",
     }
 
@@ -161,6 +161,7 @@ def _build_candidate() -> Candidate:
     return Candidate(
         scored_item=ScoredItem(
             canonical_name="milk",
+            display_name="Milk",
             original_names={"Milk"},
             occurrence_count=4,
             unique_days=4,

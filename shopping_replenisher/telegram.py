@@ -86,16 +86,16 @@ def _build_run_summary_message(
 
     if now_candidates:
         lines.append("Overdue:")
-        lines.extend(f"- {c.scored_item.canonical_name}" for c in now_candidates)
+        lines.extend(f"- {c.scored_item.display_name}" for c in now_candidates)
         lines.append("")
 
     if soon_candidates:
         lines.append("Coming up:")
-        lines.extend(f"- {c.scored_item.canonical_name}" for c in soon_candidates)
+        lines.extend(f"- {c.scored_item.display_name}" for c in soon_candidates)
         lines.append("")
 
     if optional_candidates:
-        names = ", ".join(c.scored_item.canonical_name for c in optional_candidates)
+        names = ", ".join(c.scored_item.display_name for c in optional_candidates)
         lines.append(f"On the radar: {names}")
 
     return "\n".join(lines).rstrip()

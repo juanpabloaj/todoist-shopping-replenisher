@@ -24,7 +24,7 @@ Python tool for analyzing the purchase history of a Todoist shopping project, id
 
 - Python 3.11+
 - `uv` for environment and dependency management
-- A `.env` file with the required variables
+- A `.env` file with at least the local-analysis variables
 - A local Todoist SQLite database, kept in sync by [todoist-local-sync](https://github.com/juanpabloaj/todoist-local-sync)
 
 ## Setup
@@ -47,11 +47,14 @@ uv sync
 cp .env.example .env
 ```
 
-Fill in at least:
+Fill in for local diagnostics (`inspect`, `predict`, `run` dry-run):
 
 - `TODOIST_DB_PATH`
-- `TODOIST_API_TOKEN`
 - `SHOPPING_PROJECT_ID`
+
+Also fill in for `run --apply`:
+
+- `TODOIST_API_TOKEN`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
 
@@ -104,7 +107,8 @@ uv run ruff check .
 
 ## Operational Notes
 
-- `predict` always writes local reports to `reports/<timestamp>/`
+- `predict` always writes local reports to a unique directory under `reports/`
 - `run --apply` sends Telegram only if at least one item was successfully added
+- User-facing outputs use readable item names from recent history; canonical normalized names remain in the JSON/CSV payload for traceability
 - No automatic API retries are implemented; the next cron run is the natural retry path
 - Idempotency depends on the local Todoist SQLite being up to date before the next scheduled run

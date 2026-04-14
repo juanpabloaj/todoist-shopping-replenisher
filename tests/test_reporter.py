@@ -24,6 +24,7 @@ def test_build_summary_payload_has_expected_json_structure() -> None:
     assert payload["candidates"] == [
         {
             "canonical_name": "milk",
+            "display_name": "Milk",
             "original_names": ["Milk"],
             "candidate_class": "now",
             "auto_add": True,
@@ -56,16 +57,38 @@ def test_write_report_artifacts_writes_json_markdown_and_csv(tmp_path: Path) -> 
     summary_markdown = artifacts.summary_md_path.read_text(encoding="utf-8")
     candidates_csv = artifacts.candidates_csv_path.read_text(encoding="utf-8")
 
-    assert artifacts.report_dir.name == "20260409T083000"
+    assert artifacts.report_dir.name == "20260409T083000000000"
     assert summary_payload["candidate_count"] == 1
     assert "# Prediction Summary" in summary_markdown
     assert (
         "| Item | Class | Auto-add | Confidence | Days Since Last | Typical Gap | Overdue Ratio |"
         in summary_markdown
     )
-    assert "| milk | now | true | medium | 7 | 7.00 | 1.00 |" in summary_markdown
-    assert "canonical_name,candidate_class,auto_add,confidence" in candidates_csv
-    assert "milk,now,true,medium" in candidates_csv
+    assert "| Milk | now | true | medium | 7 | 7.00 | 1.00 |" in summary_markdown
+    assert "display_name,canonical_name,candidate_class,auto_add,confidence" in candidates_csv
+    assert "Milk,milk,now,true,medium" in candidates_csv
+
+
+def test_write_report_artifacts_avoids_reusing_existing_directory(tmp_path: Path) -> None:
+    """Artifact generation should allocate a fresh directory when the base name already exists."""
+
+    candidate = _build_candidate()
+    generated_at = datetime(2026, 4, 9, 8, 30, 0)
+
+    first_artifacts = write_report_artifacts(
+        [candidate],
+        reports_root=tmp_path,
+        generated_at=generated_at,
+    )
+    second_artifacts = write_report_artifacts(
+        [candidate],
+        reports_root=tmp_path,
+        generated_at=generated_at,
+    )
+
+    assert first_artifacts.report_dir.name == "20260409T083000000000"
+    assert second_artifacts.report_dir.name == "20260409T083000000000-1"
+    assert second_artifacts.summary_json_path.exists()
 
 
 def _build_candidate() -> Candidate:
@@ -74,6 +97,7 @@ def _build_candidate() -> Candidate:
     return Candidate(
         scored_item=ScoredItem(
             canonical_name="milk",
+            display_name="Milk",
             original_names={"Milk"},
             occurrence_count=4,
             unique_days=4,

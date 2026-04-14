@@ -160,6 +160,7 @@ def build_item_histories(
 @dataclass
 class ItemHistory:
     canonical_name: str
+    display_name: str
     original_names: set[str]
     occurrences: list[PurchaseOccurrence]
     occurrence_days: list[date]
@@ -182,10 +183,12 @@ python -m shopping_replenisher.cli run --apply     # Full pipeline + write to To
 ## Environment Variables
 
 ```env
-# Required
+# Required for local diagnostics and dry-run
 TODOIST_DB_PATH=/home/user/data/todoist.db
-TODOIST_API_TOKEN=...
 SHOPPING_PROJECT_ID=YOUR_PROJECT_ID
+
+# Required for run --apply
+TODOIST_API_TOKEN=...
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_CHAT_ID=...
 
@@ -206,15 +209,17 @@ TIMEZONE=
 
 ## Output
 
-Each run produces artifacts in `reports/<timestamp>/`:
+Each run produces artifacts in a unique directory under `reports/`:
 
 ```
 reports/
-└── <timestamp>/
+└── <timestamp>[...optional-suffix]/
     ├── summary.json
     ├── summary.md
     └── candidates.csv
 ```
+
+Reports expose both a human-readable `display_name` and the normalized `canonical_name`. User-facing surfaces such as Markdown summaries, Telegram messages, and Todoist task content use the readable display name; the canonical name remains for matching traceability.
 
 Telegram summaries are sent in plain text and grouped by urgency:
 

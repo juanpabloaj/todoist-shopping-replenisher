@@ -25,6 +25,7 @@ class ItemHistory:
     """Grouped history for a canonical item name."""
 
     canonical_name: str
+    display_name: str
     original_names: set[str]
     occurrences: list[PurchaseOccurrence]
     occurrence_days: list[date]
@@ -78,6 +79,7 @@ def build_item_histories(
         original_names = {occurrence.content for occurrence in sorted_occurrences}
         histories[canonical_name] = ItemHistory(
             canonical_name=canonical_name,
+            display_name=sorted_occurrences[-1].content.strip(),
             original_names=original_names,
             occurrences=sorted_occurrences,
             occurrence_days=occurrence_days,

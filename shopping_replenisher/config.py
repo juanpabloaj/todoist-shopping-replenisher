@@ -38,20 +38,30 @@ class AppConfig:
 
 REQUIRED_ENV_VARS: tuple[str, ...] = (
     "TODOIST_DB_PATH",
-    "TODOIST_API_TOKEN",
     "SHOPPING_PROJECT_ID",
+)
+WRITE_REQUIRED_ENV_VARS: tuple[str, ...] = (
+    "TODOIST_API_TOKEN",
     "TELEGRAM_BOT_TOKEN",
     "TELEGRAM_CHAT_ID",
 )
 ALLOWED_CONFIDENCE_LEVELS: frozenset[str] = frozenset({"low", "medium", "high"})
 
 
-def load_config(dotenv_path: str | Path | None = None) -> AppConfig:
+def load_config(
+    dotenv_path: str | Path | None = None,
+    *,
+    require_write_credentials: bool = True,
+) -> AppConfig:
     """Load application configuration from environment variables and .env."""
 
     load_dotenv(dotenv_path=dotenv_path, override=False)
 
-    missing_vars = [name for name in REQUIRED_ENV_VARS if not _get_required_str(name)]
+    required_env_vars = REQUIRED_ENV_VARS
+    if require_write_credentials:
+        required_env_vars = REQUIRED_ENV_VARS + WRITE_REQUIRED_ENV_VARS
+
+    missing_vars = [name for name in required_env_vars if not _get_required_str(name)]
     if missing_vars:
         missing_list = ", ".join(sorted(missing_vars))
         raise ConfigError(f"Missing required environment variables: {missing_list}")
@@ -71,15 +81,15 @@ def load_config(dotenv_path: str | Path | None = None) -> AppConfig:
 
     return AppConfig(
         todoist_db_path=Path(_get_required_str("TODOIST_DB_PATH")),
-        todoist_api_token=_get_required_str("TODOIST_API_TOKEN"),
+        todoist_api_token=_get_str("TODOIST_API_TOKEN", default=""),
         shopping_project_id=_get_required_str("SHOPPING_PROJECT_ID"),
-        telegram_bot_token=_get_required_str("TELEGRAM_BOT_TOKEN"),
-        telegram_chat_id=_get_required_str("TELEGRAM_CHAT_ID"),
+        telegram_bot_token=_get_str("TELEGRAM_BOT_TOKEN", default=""),
+        telegram_chat_id=_get_str("TELEGRAM_CHAT_ID", default=""),
         auto_apply=_get_bool("AUTO_APPLY", default=False),
-        max_items_per_run=_get_int("MAX_ITEMS_PER_RUN", default=5),
-        min_pattern_occurrences=_get_int("MIN_PATTERN_OCCURRENCES", default=4),
+        max_items_per_run=_get_positive_int("MAX_ITEMS_PER_RUN", default=5),
+        min_pattern_occurrences=_get_positive_int("MIN_PATTERN_OCCURRENCES", default=4),
         min_confidence=min_confidence,
-        buy_soon_days=_get_int("BUY_SOON_DAYS", default=7),
+        buy_soon_days=_get_non_negative_int("BUY_SOON_DAYS", default=7),
         ignored_items=_get_ignored_items("IGNORED_ITEMS"),
         todoist_task_prefix=_get_str("TODOIST_TASK_PREFIX", default=""),
         log_level=_get_str("LOG_LEVEL", default="INFO"),
@@ -137,6 +147,24 @@ def _get_bool(name: str, default: bool) -> bool:
     if normalized in {"0", "false", "no", "off"}:
         return False
     raise ConfigError(f"Environment variable {name} must be a boolean.")
+
+
+def _get_positive_int(name: str, default: int) -> int:
+    """Read an integer environment variable that must be positive."""
+
+    value = _get_int(name, default)
+    if value < 1:
+        raise ConfigError(f"Environment variable {name} must be greater than or equal to 1.")
+    return value
+
+
+def _get_non_negative_int(name: str, default: int) -> int:
+    """Read an integer environment variable that must be non-negative."""
+
+    value = _get_int(name, default)
+    if value < 0:
+        raise ConfigError(f"Environment variable {name} must be greater than or equal to 0.")
+    return value
 
 
 def _get_ignored_items(name: str) -> frozenset[str]:

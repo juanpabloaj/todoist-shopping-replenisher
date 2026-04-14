@@ -11,8 +11,10 @@ from shopping_replenisher.config import AppConfig, ConfigError, load_config
 
 REQUIRED_ENV_VARS: tuple[str, ...] = (
     "TODOIST_DB_PATH",
-    "TODOIST_API_TOKEN",
     "SHOPPING_PROJECT_ID",
+)
+WRITE_REQUIRED_ENV_VARS: tuple[str, ...] = (
+    "TODOIST_API_TOKEN",
     "TELEGRAM_BOT_TOKEN",
     "TELEGRAM_CHAT_ID",
 )
@@ -21,15 +23,38 @@ REQUIRED_ENV_VARS: tuple[str, ...] = (
 def test_load_config_requires_all_required_variables(monkeypatch: pytest.MonkeyPatch) -> None:
     """The loader should fail fast when required variables are missing."""
 
-    for name in REQUIRED_ENV_VARS:
+    for name in REQUIRED_ENV_VARS + WRITE_REQUIRED_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
 
     with pytest.raises(ConfigError) as exc_info:
         load_config(dotenv_path="tests/does-not-exist.env")
 
     message = str(exc_info.value)
-    for name in REQUIRED_ENV_VARS:
+    for name in REQUIRED_ENV_VARS + WRITE_REQUIRED_ENV_VARS:
         assert name in message
+
+
+def test_load_config_can_skip_write_credentials_for_local_commands(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Local-only commands should not require Todoist or Telegram write credentials."""
+
+    monkeypatch.setenv("TODOIST_DB_PATH", "/tmp/todoist.db")
+    monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
+    monkeypatch.delenv("TODOIST_API_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+
+    config = load_config(
+        dotenv_path="tests/does-not-exist.env",
+        require_write_credentials=False,
+    )
+
+    assert config.todoist_db_path == Path("/tmp/todoist.db")
+    assert config.shopping_project_id == "project-id"
+    assert config.todoist_api_token == ""
+    assert config.telegram_bot_token == ""
+    assert config.telegram_chat_id == ""
 
 
 def test_load_config_accepts_required_variables(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -40,6 +65,7 @@ def test_load_config_accepts_required_variables(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot-token")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat-id")
+    monkeypatch.delenv("IGNORED_ITEMS", raising=False)
 
     config = load_config(dotenv_path="tests/does-not-exist.env")
 
@@ -85,6 +111,34 @@ def test_load_config_rejects_invalid_min_confidence(
         load_config(dotenv_path="tests/does-not-exist.env")
 
     assert "MIN_CONFIDENCE" in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    ("env_name", "env_value"),
+    [
+        ("MAX_ITEMS_PER_RUN", "0"),
+        ("MIN_PATTERN_OCCURRENCES", "0"),
+        ("BUY_SOON_DAYS", "-1"),
+    ],
+)
+def test_load_config_rejects_out_of_range_numeric_settings(
+    monkeypatch: pytest.MonkeyPatch,
+    env_name: str,
+    env_value: str,
+) -> None:
+    """Numeric behavior settings should fail fast when outside supported bounds."""
+
+    monkeypatch.setenv("TODOIST_DB_PATH", "/tmp/todoist.db")
+    monkeypatch.setenv("TODOIST_API_TOKEN", "token")
+    monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat-id")
+    monkeypatch.setenv(env_name, env_value)
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config(dotenv_path="tests/does-not-exist.env")
+
+    assert env_name in str(exc_info.value)
 
 
 def test_load_config_accepts_valid_timezone(monkeypatch: pytest.MonkeyPatch) -> None:

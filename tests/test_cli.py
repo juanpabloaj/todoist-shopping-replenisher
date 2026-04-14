@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from shopping_replenisher.cli import _handle_predict
+from shopping_replenisher.cli import _handle_inspect, _handle_predict, main
 from shopping_replenisher.config import AppConfig
 from shopping_replenisher.db import CompletionRow
 from shopping_replenisher.reporter import write_report_artifacts as real_write_report_artifacts
@@ -24,6 +24,7 @@ def test_handle_predict_uses_shared_pipeline_builder(monkeypatch: pytest.MonkeyP
         Candidate(
             scored_item=ScoredItem(
                 canonical_name="milk",
+                display_name="Milk",
                 original_names={"Milk"},
                 occurrence_count=4,
                 unique_days=4,
@@ -52,12 +53,12 @@ def test_handle_predict_uses_shared_pipeline_builder(monkeypatch: pytest.MonkeyP
     )
     monkeypatch.setattr(
         "shopping_replenisher.cli.write_report_artifacts",
-        lambda candidates, reports_root, generated_at: calls.setdefault(
+        lambda candidates, reports_root, generated_at, payload=None: calls.setdefault(
             "artifacts",
             type(
                 "Artifacts",
                 (),
-                {"report_dir": Path("reports/20260409T120000")},
+                {"report_dir": Path("reports/20260409T120000000000")},
             )(),
         ),
     )
@@ -100,10 +101,11 @@ def test_handle_predict_json_output_has_expected_structure(
     )
     monkeypatch.setattr(
         "shopping_replenisher.cli.write_report_artifacts",
-        lambda candidates, reports_root, generated_at: real_write_report_artifacts(
+        lambda candidates, reports_root, generated_at, payload=None: real_write_report_artifacts(
             candidates,
             reports_root=tmp_path,
             generated_at=generated_at,
+            payload=payload,
         ),
     )
 
@@ -116,7 +118,7 @@ def test_handle_predict_json_output_has_expected_structure(
     assert "candidates" in payload
     assert "candidate_count" in payload
     assert isinstance(payload["candidates"], list)
-    assert (tmp_path / "20260413T120000" / "summary.json").exists()
+    assert (tmp_path / "20260413T120000000000" / "summary.json").exists()
 
 
 def test_handle_predict_with_history_produces_scored_candidates(
@@ -159,10 +161,11 @@ def test_handle_predict_with_history_produces_scored_candidates(
     )
     monkeypatch.setattr(
         "shopping_replenisher.cli.write_report_artifacts",
-        lambda candidates, reports_root, generated_at: real_write_report_artifacts(
+        lambda candidates, reports_root, generated_at, payload=None: real_write_report_artifacts(
             candidates,
             reports_root=tmp_path,
             generated_at=generated_at,
+            payload=payload,
         ),
     )
 
@@ -175,8 +178,54 @@ def test_handle_predict_with_history_produces_scored_candidates(
     assert payload["candidate_count"] >= 1
     first_candidate = payload["candidates"][0]
     assert first_candidate["canonical_name"] == "milk"
+    assert first_candidate["display_name"] == "Milk"
     assert first_candidate["candidate_class"] in {"now", "soon", "optional"}
     assert isinstance(first_candidate["auto_add"], bool)
+
+
+def test_main_predict_allows_missing_write_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Predict should load local config without Todoist or Telegram write credentials."""
+
+    monkeypatch.setenv("TODOIST_DB_PATH", "/tmp/todoist.db")
+    monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
+    monkeypatch.delenv("TODOIST_API_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+    monkeypatch.setattr("shopping_replenisher.cli._handle_predict", lambda config, output_json: 0)
+
+    result = main(["predict"])
+
+    assert result == 0
+
+
+def test_main_run_apply_requires_write_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Apply mode should still fail fast when write credentials are missing."""
+
+    monkeypatch.setenv("TODOIST_DB_PATH", "/tmp/todoist.db")
+    monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
+    monkeypatch.delenv("TODOIST_API_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--dotenv-path", "tests/does-not-exist.env", "run", "--apply"])
+
+    assert exc_info.value.code == 2
+
+
+def test_handle_inspect_rejects_missing_required_tables(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Inspect should fail when the configured SQLite source is missing pipeline tables."""
+
+    config = _build_config(todoist_db_path=tmp_path / "missing-tables.db")
+
+    with caplog.at_level("ERROR"):
+        result = _handle_inspect(config)
+
+    assert result == 2
+    assert "missing_tables=completed_tasks, completion_events, tasks" in caplog.text
 
 
 def _build_config(*, todoist_db_path: Path | None = None) -> AppConfig:

@@ -13,6 +13,7 @@ def test_score_item_history_computes_documented_features() -> None:
 
     history = ItemHistory(
         canonical_name="milk",
+        display_name="Milk",
         original_names={"Milk"},
         occurrences=[
             PurchaseOccurrence(
@@ -52,6 +53,7 @@ def test_score_item_history_computes_documented_features() -> None:
 
     assert scored_item == ScoredItem(
         canonical_name="milk",
+        display_name="Milk",
         original_names={"Milk"},
         occurrence_count=4,
         unique_days=4,
@@ -71,6 +73,7 @@ def test_score_item_history_returns_low_confidence_without_stable_pattern() -> N
 
     history = ItemHistory(
         canonical_name="bread",
+        display_name="Bread",
         original_names={"Bread"},
         occurrences=[
             PurchaseOccurrence(

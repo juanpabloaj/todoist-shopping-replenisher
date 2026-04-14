@@ -6,6 +6,7 @@ import argparse
 import json
 import logging
 from pathlib import Path
+import sqlite3
 from typing import Sequence
 
 from shopping_replenisher.config import AppConfig, ConfigError, load_config
@@ -57,9 +58,13 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     parser = build_parser()
     args = parser.parse_args(argv)
+    require_write_credentials = args.command == "run" and args.apply
 
     try:
-        config = load_config(args.dotenv_path)
+        config = load_config(
+            args.dotenv_path,
+            require_write_credentials=require_write_credentials,
+        )
     except ConfigError as exc:
         parser.exit(status=2, message=f"Configuration error: {exc}\n")
 
@@ -79,12 +84,17 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _handle_inspect(config: AppConfig) -> int:
     """Handle the inspect subcommand."""
 
+    db_validation_error = _validate_sqlite_source(config)
+    if db_validation_error is not None:
+        logger.error("%s", db_validation_error)
+        return 2
+
     logger.info("configuration is valid")
-    logger.info("TODOIST_DB_PATH=configured")
-    logger.info("SHOPPING_PROJECT_ID=configured")
-    logger.info("TODOIST_API_TOKEN=configured")
-    logger.info("TELEGRAM_BOT_TOKEN=configured")
-    logger.info("TELEGRAM_CHAT_ID=configured")
+    logger.info("TODOIST_DB_PATH=%s", config.todoist_db_path)
+    logger.info("SHOPPING_PROJECT_ID=%s", config.shopping_project_id)
+    logger.info("TODOIST_API_TOKEN=%s", _describe_secret(config.todoist_api_token))
+    logger.info("TELEGRAM_BOT_TOKEN=%s", _describe_secret(config.telegram_bot_token))
+    logger.info("TELEGRAM_CHAT_ID=%s", _describe_secret(config.telegram_chat_id))
     logger.info("AUTO_APPLY=%s", config.auto_apply)
     logger.info("LOG_LEVEL=%s", config.log_level)
     return 0
@@ -96,12 +106,13 @@ def _handle_predict(config: AppConfig, output_json: bool) -> int:
     logger.info("predict started")
     candidates = build_pipeline_candidates(config)
     generated_at = resolve_generated_at(config)
+    payload = build_summary_payload(candidates, generated_at=generated_at)
     artifacts = write_report_artifacts(
         candidates,
         reports_root=Path("reports"),
         generated_at=generated_at,
+        payload=payload,
     )
-    payload = build_summary_payload(candidates, generated_at=generated_at)
 
     logger.info("predict report written path=%s", artifacts.report_dir)
     if output_json:
@@ -130,6 +141,39 @@ def _configure_logging(log_level: str) -> None:
     )
     if level_name not in logging.getLevelNamesMapping():
         logger.warning("invalid log level %s, defaulting to INFO", log_level)
+
+
+def _describe_secret(value: str) -> str:
+    """Describe whether an optional secret-like config value is present."""
+
+    return "configured" if value else "not configured"
+
+
+def _validate_sqlite_source(config: AppConfig) -> str | None:
+    """Validate that the configured SQLite source contains the required tables."""
+
+    required_tables = {"tasks", "completion_events", "completed_tasks"}
+    try:
+        with sqlite3.connect(config.todoist_db_path) as conn:
+            rows = conn.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE type = 'table'
+                """
+            ).fetchall()
+    except sqlite3.Error as exc:
+        return f"SQLite validation failed db_path={config.todoist_db_path} error={exc}"
+
+    table_names = {str(row[0]) for row in rows}
+    missing_tables = sorted(required_tables - table_names)
+    if missing_tables:
+        missing_list = ", ".join(missing_tables)
+        return (
+            "SQLite validation failed db_path="
+            f"{config.todoist_db_path} missing_tables={missing_list}"
+        )
+    return None
 
 
 if __name__ == "__main__":

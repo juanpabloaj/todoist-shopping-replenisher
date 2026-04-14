@@ -19,7 +19,10 @@ cd /home/user/code/todoist-shopping-replenisher
 uv sync
 ```
 
-Copy `.env.example` to `.env` and fill in all required values.
+Copy `.env.example` to `.env`.
+
+- For `inspect`, `predict`, and dry-run `run`, only `TODOIST_DB_PATH` and `SHOPPING_PROJECT_ID` are required.
+- For `run --apply`, Todoist and Telegram credentials are also required.
 
 ## Monitoring
 
@@ -78,4 +81,4 @@ For detailed candidate output with scores:
 .venv/bin/python -m shopping_replenisher.cli predict
 ```
 
-Reports are written to `reports/<timestamp>/` for inspection.
+Reports are written to a unique directory under `reports/` for inspection.

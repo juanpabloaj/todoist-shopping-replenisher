@@ -238,6 +238,85 @@ def test_run_pipeline_logs_telegram_error_details(
     assert "telegram notification failed error=telegram boom" in caplog.text
 
 
+def test_run_pipeline_continues_after_partial_todoist_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Apply mode should continue after one Todoist write fails and still notify on successes."""
+
+    config = _build_config()
+    report_artifacts = _build_report_artifacts()
+    candidates = [
+        _build_candidate("milk", "now", True, is_active=False),
+        _build_candidate("bread", "soon", True, is_active=False),
+        _build_candidate("rice", "optional", False, is_active=False),
+    ]
+    telegram_calls: list[dict[str, object]] = []
+
+    monkeypatch.setattr("shopping_replenisher.runner.sqlite3.connect", _fake_connect)
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_active_items", lambda conn, project_id: []
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_completion_event_rows",
+        lambda conn, project_id: [],
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_completed_task_rows",
+        lambda conn, project_id: [],
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.build_purchase_occurrences",
+        lambda completion_events, completed_tasks, timezone_name=None: [],
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.build_item_histories",
+        lambda occurrences, timezone_name=None: {},
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.select_candidates",
+        lambda histories, active_items, config, today: candidates,
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.write_report_artifacts",
+        lambda candidates, reports_root, generated_at: report_artifacts,
+    )
+
+    def fake_create_task(config: AppConfig, candidate: Candidate) -> str:
+        if candidate.scored_item.canonical_name == "milk":
+            raise __import__(
+                "shopping_replenisher.todoist_api", fromlist=["TodoistAPIError"]
+            ).TodoistAPIError("todoist boom")
+        return f"task-{candidate.scored_item.canonical_name}"
+
+    def fake_send_run_summary(
+        config: AppConfig,
+        summary_candidates: list[Candidate],
+        added_task_ids: list[str],
+    ) -> None:
+        telegram_calls.append(
+            {
+                "candidate_names": [
+                    candidate.scored_item.canonical_name for candidate in summary_candidates
+                ],
+                "added_task_ids": added_task_ids,
+            }
+        )
+
+    monkeypatch.setattr("shopping_replenisher.runner.create_task", fake_create_task)
+    monkeypatch.setattr("shopping_replenisher.runner.send_run_summary", fake_send_run_summary)
+
+    result = run_pipeline(config, apply_mode=True)
+
+    assert result.added_task_ids == ["task-bread"]
+    assert result.failed_items == ["milk"]
+    assert telegram_calls == [
+        {
+            "candidate_names": ["bread", "rice"],
+            "added_task_ids": ["task-bread"],
+        }
+    ]
+
+
 def test_build_pipeline_candidates_logs_and_reraises_sqlite_errors(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
@@ -302,6 +381,7 @@ def _build_candidate(
     return Candidate(
         scored_item=ScoredItem(
             canonical_name=canonical_name,
+            display_name=canonical_name.title(),
             original_names={canonical_name.title()},
             occurrence_count=4,
             unique_days=4,

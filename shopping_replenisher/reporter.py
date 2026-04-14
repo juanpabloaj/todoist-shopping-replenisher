@@ -46,17 +46,14 @@ def write_report_artifacts(
     *,
     reports_root: Path,
     generated_at: datetime,
+    payload: dict[str, object] | None = None,
 ) -> ReportArtifacts:
     """Write JSON, Markdown, and CSV artifacts for a prediction run."""
 
-    # Directory names use second-level precision. Two runs in the same second
-    # will silently reuse this directory because mkdir() uses exist_ok=True
-    # below. This tool is intended for non-concurrent single-user operation,
-    # so such overlap is outside the supported operating model.
-    report_dir = reports_root / generated_at.strftime("%Y%m%dT%H%M%S")
-    report_dir.mkdir(parents=True, exist_ok=True)
+    report_dir = _allocate_report_dir(reports_root, generated_at)
 
-    payload = build_summary_payload(candidates, generated_at=generated_at)
+    if payload is None:
+        payload = build_summary_payload(candidates, generated_at=generated_at)
     summary_json_path = report_dir / "summary.json"
     summary_md_path = report_dir / "summary.md"
     candidates_csv_path = report_dir / "candidates.csv"
@@ -77,6 +74,22 @@ def write_report_artifacts(
         summary_md_path=summary_md_path,
         candidates_csv_path=candidates_csv_path,
     )
+
+
+def _allocate_report_dir(reports_root: Path, generated_at: datetime) -> Path:
+    """Allocate a unique report directory without silently reusing old artifacts."""
+
+    base_name = generated_at.strftime("%Y%m%dT%H%M%S%f")
+    for suffix in range(1000):
+        dir_name = base_name if suffix == 0 else f"{base_name}-{suffix}"
+        report_dir = reports_root / dir_name
+        try:
+            report_dir.mkdir(parents=True, exist_ok=False)
+            return report_dir
+        except FileExistsError:
+            continue
+
+    raise RuntimeError(f"Failed to allocate a unique report directory for base name {base_name}.")
 
 
 def render_summary_markdown(payload: dict[str, object]) -> str:
@@ -112,9 +125,9 @@ def render_summary_markdown(payload: dict[str, object]) -> str:
 
     for candidate in candidates:
         lines.append(
-            "| {canonical_name} | {candidate_class} | {auto_add} | {confidence} | "
+            "| {display_name} | {candidate_class} | {auto_add} | {confidence} | "
             "{days_since_last} | {typical_gap} | {overdue_ratio} |".format(
-                canonical_name=candidate["canonical_name"],
+                display_name=candidate["display_name"],
                 candidate_class=candidate["candidate_class"],
                 auto_add=str(candidate["auto_add"]).lower(),
                 confidence=candidate["confidence"],
@@ -132,6 +145,7 @@ def write_candidates_csv(payload: dict[str, object], csv_path: Path) -> None:
     """Write the candidate summary as CSV."""
 
     fieldnames = [
+        "display_name",
         "canonical_name",
         "candidate_class",
         "auto_add",
@@ -154,6 +168,7 @@ def write_candidates_csv(payload: dict[str, object], csv_path: Path) -> None:
         for candidate in payload["candidates"]:
             writer.writerow(
                 {
+                    "display_name": candidate["display_name"],
                     "canonical_name": candidate["canonical_name"],
                     "candidate_class": candidate["candidate_class"],
                     "auto_add": str(candidate["auto_add"]).lower(),
@@ -178,6 +193,7 @@ def _serialize_candidate(candidate: Candidate) -> dict[str, object]:
     scored_item = candidate.scored_item
     return {
         "canonical_name": scored_item.canonical_name,
+        "display_name": scored_item.display_name,
         "original_names": sorted(scored_item.original_names),
         "candidate_class": candidate.candidate_class,
         "auto_add": candidate.auto_add,

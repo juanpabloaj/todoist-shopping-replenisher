@@ -17,6 +17,7 @@ class ScoredItem:
     """Computed scoring features for a canonical item history."""
 
     canonical_name: str
+    display_name: str
     original_names: set[str]
     occurrence_count: int
     unique_days: int
@@ -51,6 +52,7 @@ def score_item_history(
 
     return ScoredItem(
         canonical_name=history.canonical_name,
+        display_name=history.display_name,
         original_names=history.original_names,
         occurrence_count=occurrence_count,
         unique_days=unique_days,
