@@ -49,6 +49,8 @@ def fetch_active_items(conn: sqlite3.Connection, project_id: str) -> list[Active
 def fetch_completion_event_rows(conn: sqlite3.Connection, project_id: str) -> list[CompletionRow]:
     """Fetch completion-event history rows for the given shopping project."""
 
+    # Row order is intentionally unspecified here. history.py owns canonical
+    # ordering and sorts completion data before deduplication and scoring.
     query = """
         SELECT
             task_id,
@@ -64,6 +66,8 @@ def fetch_completion_event_rows(conn: sqlite3.Connection, project_id: str) -> li
 def fetch_completed_task_rows(conn: sqlite3.Connection, project_id: str) -> list[CompletionRow]:
     """Fetch completed-task history rows for the given shopping project."""
 
+    # Row order is intentionally unspecified here. history.py owns canonical
+    # ordering and sorts completion data before deduplication and scoring.
     query = """
         SELECT
             task_id,

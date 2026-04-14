@@ -69,13 +69,14 @@ Use this file as the current backlog of engineering issues that should be review
 
 ## Low Priority
 
-- [ ] Decide whether SQLite read queries should enforce explicit ordering
+- [x] Decide whether SQLite read queries should enforce explicit ordering
   - Problem: current read queries rely on implicit SQLite row order.
   - Why it matters: deterministic ordering can make reports and debugging more predictable.
   - Relevant files:
     - `shopping_replenisher/db.py`
     - `tests/test_db.py`
   - Expected outcome: either add `ORDER BY` where needed or document why ordering is intentionally deferred to later stages.
+  - Resolved: no `ORDER BY` added. Inline comments added to completion query functions documenting that `history.py` owns ordering. `test_fetch_active_items_returns_typed_rows` fixed to use set comparison instead of exact list equality. Phase artifacts in `docs/artifacts/db_ordering/`.
 
 - [ ] Review report directory collision risk
   - Problem: report directories are timestamped to the second.

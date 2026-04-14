@@ -89,10 +89,10 @@ def test_fetch_active_items_returns_typed_rows(
 
     rows = fetch_active_items(sqlite_conn, "shopping-project")
 
-    assert rows == [
+    assert set(rows) == {
         ActiveItemRow(task_id="active-1", content="Milk"),
         ActiveItemRow(task_id="active-2", content="Eggs"),
-    ]
+    }
 
 
 def test_fetch_completion_event_rows_returns_typed_rows(
