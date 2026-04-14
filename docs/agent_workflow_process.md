@@ -59,6 +59,26 @@ Define before any implementation begins:
 
 This phase produces a short checklist, not a design document. Its purpose is to make implicit contracts explicit before the implementor begins.
 
+### Phase 1.5 — Judgment Check (Implementor, before contract is finalized)
+
+**Triggered when the contract contains a non-obvious decision.** Examples:
+
+- Narrowing scope to documentation only instead of fixing behavior
+- Explicitly not correcting production code (accepting a tradeoff)
+- Choosing between two or more technically plausible approaches
+- Deferring a class of fix rather than patching the immediate symptom
+
+When triggered, the implementor must answer these four questions before the contract is finalized:
+
+1. Do you agree with this decision?
+2. What is the strongest alternative you see?
+3. What hidden implementation risk does this contract create?
+4. Does this decision require a new Phase 1 exclusion?
+
+The reviewer then finalizes the contract brief based on the implementor's response. This is not asking the implementor to overrule the reviewer — it is forcing a second technical pass before scope is frozen.
+
+**This phase is not required for every task.** It is only required when the contract contains a real judgment call, not just task decomposition.
+
 ### Phase 2 — Implementation (Implementor)
 
 The implementor writes code and tests under two hard constraints:
@@ -233,6 +253,7 @@ Each phase must produce a durable artifact before the next phase begins. These d
 | Phase | Artifact | Produced by |
 |---|---|---|
 | Phase 1 | Contract brief: inputs, outputs, failure behavior, new config, new invariants, open assumptions | Reviewer + Implementor |
+| Phase 1.5 | Judgment check record: implementor's answers to the four questions; reviewer's final contract decision and any revised exclusions | Implementor + Reviewer |
 | Phase 2–3 | Change summary: files changed, behavior changed, tests added, known limitations, unresolved concerns | Implementor |
 | Phase 3 | Risk note: each residual issue labeled as **accepted risk** / **deferred debt** / **scope insufficiency**; what was not verified; what needs real-data validation | Implementor |
 | Phase 4 | Review verdict: pass / blocked / pass-with-debt, findings, missing tests, items escalated to debt | Reviewer |
