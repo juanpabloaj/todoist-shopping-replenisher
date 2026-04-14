@@ -49,6 +49,10 @@ def write_report_artifacts(
 ) -> ReportArtifacts:
     """Write JSON, Markdown, and CSV artifacts for a prediction run."""
 
+    # Directory names use second-level precision. Two runs in the same second
+    # will silently reuse this directory because mkdir() uses exist_ok=True
+    # below. This tool is intended for non-concurrent single-user operation,
+    # so such overlap is outside the supported operating model.
     report_dir = reports_root / generated_at.strftime("%Y%m%dT%H%M%S")
     report_dir.mkdir(parents=True, exist_ok=True)
 

@@ -78,13 +78,14 @@ Use this file as the current backlog of engineering issues that should be review
   - Expected outcome: either add `ORDER BY` where needed or document why ordering is intentionally deferred to later stages.
   - Resolved: no `ORDER BY` added. Inline comments added to completion query functions documenting that `history.py` owns ordering. `test_fetch_active_items_returns_typed_rows` fixed to use set comparison instead of exact list equality. Phase artifacts in `docs/artifacts/db_ordering/`.
 
-- [ ] Review report directory collision risk
+- [x] Review report directory collision risk
   - Problem: report directories are timestamped to the second.
   - Why it matters: two runs in the same second could collide.
   - Relevant files:
     - `shopping_replenisher/reporter.py`
     - `tests/test_reporter.py`
   - Expected outcome: either accept and document the risk, or make report paths unique beyond second-level precision.
+  - Resolved: accepted and documented. Comment added to `write_report_artifacts` naming the silent-overwrite failure mode and the non-concurrent operating model invariant. The fix (adding microseconds) is deferred as this tool is designed for single-user scheduled runs. Phase artifacts in `docs/artifacts/report_collision/`.
 
 - [ ] Re-audit design and README against the final implemented behavior
   - Problem: docs have been updated incrementally across many stages and may still contain stale assumptions.
