@@ -2,6 +2,8 @@
 
 A workflow proposal for projects where autonomous agents implement and a reviewer validates. It applies at any granularity: large development stages, individual feature tasks, bug fixes, or technical debt items.
 
+**Work item** — the unit of work governed by this workflow. A work item may be a large development stage or a smaller individual task. This document uses *work item* as the generic term. The word *stage* is kept only where it refers explicitly to a larger planning phase.
+
 ---
 
 ## Context and Problem
@@ -25,9 +27,9 @@ These failures share a root cause: **the workflow optimized for forward momentum
 
 This document uses role names, not agent names. The same pattern applies regardless of which tools or models fill each role.
 
-**Implementor** — writes code, writes tests, performs adversarial self-review before declaring a stage done.
+**Implementor** — writes code, writes tests, performs adversarial self-review before declaring a work item done.
 
-**Reviewer** — performs independent structural review using different criteria than the implementor. Owns the stage-exit decision. Never accepts the implementor's self-certification as a substitute for independent review.
+**Reviewer** — performs independent structural review using different criteria than the implementor. Owns the work item exit decision. Never accepts the implementor's self-certification as a substitute for independent review.
 
 **Validator** — confirms observable business behavior and real-world correctness. Should not be the first line of defense against operational defects or structural problems. If the validator is finding missing timeouts or broken config contracts, the upstream process has failed.
 
@@ -35,16 +37,16 @@ The critical principle: **the reviewer must not use the same success criterion a
 
 ---
 
-## Stage Workflow
+## Work Item Workflow
 
-Every stage follows five explicit phases. The proportionality rule below describes when phases may be abbreviated.
+Every work item follows five explicit phases. The proportionality rule below describes when phases may be abbreviated.
 
 ### Phase 1 — Contract Review (Reviewer + Implementor, before coding)
 
 Define before any implementation begins:
 
-- What are the inputs, outputs, and failure behavior of this stage?
-- What cross-module dependencies does this stage introduce or modify?
+- What are the inputs, outputs, and failure behavior of this work item?
+- What cross-module dependencies does this work item introduce or modify?
 - For each new configuration value:
   - Is it required or optional?
   - What validation rule applies (type, format, range, allowed values)?
@@ -52,12 +54,12 @@ Define before any implementation begins:
   - What is the first production code that reads it?
 - For each new external integration:
   - What are the operational requirements? (timeout, retry policy, error wrapping)
-- Are there shared concepts this stage touches? (datetime/timezone interpretation, error handling, allowed values, data boundaries)
-- What is explicitly out of scope for this stage, and why?
+- Are there shared concepts this work item touches? (datetime/timezone interpretation, error handling, allowed values, data boundaries)
+- What is explicitly out of scope for this work item, and why?
   - For each exclusion: state what invariant or existing mechanism makes it safe to exclude.
   - "No production changes" is not a sufficient exclusion on its own — it must be paired with the reason (e.g., "the runner already enforces this invariant").
 
-This phase produces a short checklist, not a design document. Its purpose is to make implicit contracts explicit before the implementor begins.
+This phase produces a short checklist, not a design document. Its purpose is to make implicit contracts explicit before the implementor begins work on the item.
 
 ### Phase 1.5 — Judgment Check (Implementor, before contract is finalized)
 
@@ -83,7 +85,7 @@ The reviewer then finalizes the contract brief based on the implementor's respon
 
 The implementor writes code and tests under two hard constraints:
 
-- No configuration field is added without a real production consumer in this stage, or an explicitly tracked task for a future stage.
+- No configuration field is added without a real production consumer in this work item, or an explicitly tracked task for a future work item.
 - No external network call ships without an explicit timeout and wrapped errors.
 
 ### Phase 3 — Adversarial Self-Review (Implementor, before claiming done)
@@ -92,20 +94,20 @@ Before declaring implementation complete, the implementor must answer:
 
 - What new code has no caller in production or test code?
 - What inputs are accepted without validation?
-- What assumptions does this stage make that differ from other modules?
+- What assumptions does this work item make that differ from other modules?
 - What operational behaviors are absent? (timeouts, retries, fallbacks)
-- If I revert the core change of this stage, which test fails?
-- Does any finding during self-review indicate that the stage contract is too narrow or incomplete?
+- If I revert the core change of this work item, which test fails?
+- Does any finding during self-review indicate that the work item contract is too narrow or incomplete?
 
 Every residual issue must be classified as one of the following before declaring done:
 
-- **Accepted risk** — the stage contract is still sufficient; the issue is real but explicitly out of scope and safe to defer. Must reference the Phase 1 exclusion that covers it, and explain why that exclusion still holds after implementation.
-- **Deferred debt** — the issue does not block closure, but must be recorded in the technical debt backlog before the stage is closed.
-- **Scope insufficiency** — the finding indicates the current stage contract is incomplete or misleading. The stage must not be declared done until the contract is amended or the reviewer explicitly approves the narrower scope.
+- **Accepted risk** — the work item contract is still sufficient; the issue is real but explicitly out of scope and safe to defer. Must reference the Phase 1 exclusion that covers it, and explain why that exclusion still holds after implementation.
+- **Deferred debt** — the issue does not block closure, but must be recorded in the project's debt backlog before the work item is closed.
+- **Scope insufficiency** — the finding indicates the current work item contract is incomplete or misleading. The work item must not be declared done until the contract is amended or the reviewer explicitly approves the narrower scope.
 
 A residual issue may not be recorded as a generic "risk" without one of these three labels.
 
-This is not optional. A stage that cannot answer these questions is not done.
+This is not optional. A work item that cannot answer these questions is not done.
 
 ### Phase 4 — Independent Structural Review (Reviewer, independently)
 
@@ -124,49 +126,49 @@ The reviewer must check:
   - data boundaries and ownership between modules
 - Is there duplicated logic that now exists in more than one module?
 - Does at least one test cover invalid input or failure-path behavior for new code?
-- Would at least one test fail if the core change of this stage were reverted?
+- Would at least one test fail if the core change of this work item were reverted?
 - Has the implementor classified every residual issue? For each item labeled "accepted risk", verify it is actually covered by a Phase 1 exclusion — not merely assumed to be out of scope.
 
-If any answer is "unknown", the stage is not closed.
+If any answer is "unknown", the work item is not closed.
 
 ### Phase 5 — End-to-End Validation (Validator)
 
-For any stage that modifies the main execution path:
+For any work item that modifies the main execution path:
 
-- A full end-to-end run must succeed with realistic or production data before the stage is closed.
+- A full end-to-end run must succeed with realistic or production data before the work item is closed.
 - The validator confirms business correctness, not structural integrity. Structural integrity is owned by Phases 3 and 4.
 
 ---
 
 ## Proportionality Rule
 
-Not every stage requires the full weight of the five-phase process.
+Not every work item requires the full weight of the five-phase process.
 
-A stage may abbreviate Phases 1 and 3 if **all three** of the following are true:
+A work item may abbreviate Phases 1 and 3 if **all three** of the following are true:
 
 - No new configuration fields are added
 - The main execution path is not modified
 - No new external callers are introduced
 
 In that case:
-- Phase 1 is reduced to one question: "What contract or assumption changes in this stage?"
+- Phase 1 is reduced to one question: "What contract or assumption changes in this work item?"
 - Phase 3 is reduced to one question: "If I revert this change, which test fails?"
 
-Phase 4 is never abbreviated. Phase 5 is required whenever the stage affects a real execution path and is not relaxed when applicable. The independence requirement for Phase 4 does not relax for trivial stages.
+Phase 4 is never abbreviated. Phase 5 is required whenever the work item affects a real execution path and is not relaxed when applicable. The independence requirement for Phase 4 does not relax for trivial work items.
 
 ---
 
 ## Process Check — Periodic Workflow Audit
 
-The stage workflow governs how individual items close. This section governs how the workflow itself stays honest over time. Without this, process drift accumulates silently.
+The work item workflow governs how individual work items close. This section governs how the workflow itself stays honest over time. Without this, process drift accumulates silently.
 
 ### Trigger
 
 A Process Check is mandatory in either of these conditions:
 
-- **Every 3 closed items** — before starting the next item, both agents audit the last 3 closures.
+- **Every 3 closed work items** — before starting the next work item, both agents audit the last 3 closures.
 - **Immediately** after any of the following:
-  - A completed task had to be reopened or corrected post-closure
+  - A closed work item had to be reopened or corrected post-closure
   - An artifact was found to contradict the final code state
   - A residual issue was reclassified from accepted risk or deferred debt to scope insufficiency
   - Phase 4 review appeared to restate implementor conclusions rather than challenge them
@@ -179,14 +181,14 @@ Both agents answer these questions independently, then compare. During a Process
 2. Were any accepted risks weakly justified — missing a valid Phase 1 exclusion or an invariant that actually holds?
 3. Did any deferred debt item turn out to be scope insufficiency in disguise?
 4. Did any artifact become stale immediately after closure (contradicted by code within one or two tasks)?
-5. Is there a recurring failure mode across the last 3 items that the workflow does not currently address?
+5. Is there a recurring failure mode across the last 3 work items that the workflow does not currently address?
 6. Should any existing phase, checklist item, or artifact requirement be removed, simplified, or strengthened?
 
 ### Output
 
 Append findings to a rolling audit file kept in the project's documentation directory. Each project maintains its own file; the name and location are decided per project.
 
-Each entry includes: the item count that triggered the check, answers to the six questions, any workflow changes agreed upon, and any task or artifact that must be reopened or corrected as a result. If no changes are needed, record that explicitly — a clean check is also a data point.
+Each entry includes: the work item count that triggered the check, answers to the six questions, any workflow changes agreed upon, and any work item or artifact that must be reopened or corrected as a result. If no changes are needed, record that explicitly — a clean check is also a data point.
 
 ### Rule
 
@@ -196,7 +198,7 @@ If a Process Check is due and both agents skip it to start the next item, that i
 
 ## Checklists
 
-### A. Stage Exit Checklist
+### A. Work Item Exit Checklist
 
 This checklist is owned jointly: the implementor completes items marked **(I)**, the reviewer completes items marked **(R)** independently.
 
@@ -210,8 +212,8 @@ This checklist is owned jointly: the implementor completes items marked **(I)**,
 - [ ] **(I)** At least one test covers an invalid-input or failure-path case
 
 **Effectiveness gates — Reviewer (Phase 4, independent)**
-- [ ] **(R)** At least one test would fail if the core change of this stage were reverted
-- [ ] **(R)** No dead code introduced in this stage (verified by search, not assumed)
+- [ ] **(R)** At least one test would fail if the core change of this work item were reverted
+- [ ] **(R)** No dead code introduced in this work item (verified by search, not assumed)
 - [ ] **(R)** No duplicated logic across modules
 - [ ] **(R)** Cross-module invariants are consistent: datetime/timezone, error types, config values, data boundaries
 - [ ] **(R)** Test coverage is protective, not merely present
@@ -224,7 +226,7 @@ When a real bug is discovered at any point:
 2. Search the entire codebase for the same class of bug — not just the same file
 3. Add a direct regression test that fails without the fix
 4. Identify which Phase 3 or Phase 4 check should have caught this
-5. Record unresolved instances or related debt in the project backlog
+5. Record unresolved instances or related debt in the project's debt backlog
 
 A bug that is fixed without step 2 is a patch. Steps 2–5 are what convert a patch into systemic hardening.
 
@@ -246,7 +248,7 @@ For every new environment variable or configuration field:
 - [ ] Required vs optional is explicit
 - [ ] Type, format, range, and allowed values are validated at load time, not at first use
 - [ ] Default behavior when absent is defined and tested
-- [ ] Field is read by production code within this stage or the future stage is tracked
+- [ ] Field is read by production code within this work item, or a future work item tracking it exists
 - [ ] Documented in the project's configuration reference
 
 ---
@@ -274,7 +276,7 @@ Two artifacts must exist and stay current throughout the project:
 
 **Review checklist** — the checklists above, kept in the repository. Updated when new categories of defect are discovered.
 
-**Technical debt backlog** — a tracked list of known issues intentionally deferred. Prevents known problems from disappearing into chat history or commit messages. Every item deferred from a stage-exit check must appear here.
+**Technical debt backlog** — a tracked list of known issues intentionally deferred. Prevents known problems from disappearing into chat history or commit messages. Every issue deferred from a work item exit check must appear here.
 
 ---
 
@@ -307,7 +309,7 @@ docs/artifacts/<task-slug>/
 | Phase 4 | Review verdict: pass / blocked / pass-with-debt, findings, missing tests, items escalated to debt | Reviewer |
 | Phase 5 | Validation record: what was run, with what data, what passed, what failed, exact reproduction details | Validator |
 
-No stage is considered closed unless the relevant handoff artifacts exist in durable form (written to a persistent project artifact — for example, versioned docs, tracked task files, or an equivalent repository location).
+No work item is considered closed unless the relevant handoff artifacts exist in durable form (written to a persistent project artifact — for example, versioned docs, tracked task files, or an equivalent repository location).
 
 **Artifact synchronization rule**: if code changes after a Phase 4 review verdict, any affected artifact for that task must be updated before the task is considered closed. A Pass verdict does not freeze the artifact set — it freezes the review criterion. If the implementation continues to evolve, the artifacts must follow.
 
@@ -332,7 +334,7 @@ Sharing a judgment pre-empts the independent review. Sharing a fact enables it.
 
 ### Minimum Viable Handoff
 
-If the full artifact set feels heavy for a given stage, the minimum acceptable handoff is a short structured note covering:
+If the full artifact set feels heavy for a given work item, the minimum acceptable handoff is a short structured note covering:
 
 1. What changed
 2. What files were touched
@@ -340,7 +342,7 @@ If the full artifact set feels heavy for a given stage, the minimum acceptable h
 4. What remains risky
 5. What the next role should verify
 
-This minimum applies to trivial stages. Non-trivial stages require the full artifact set.
+This minimum applies to trivial work items. Non-trivial work items require the full artifact set.
 
 ### Recording Decisions as Rules
 
@@ -357,11 +359,11 @@ This turns a one-time fix into a constraint the whole workflow can apply consist
 
 The workflow described above prevents the failure modes listed at the top because:
 
-- Structural problems are caught at stage boundary, not at project end
+- Structural problems are caught at work item boundary, not at project end
 - Tests are evaluated for effectiveness, not just presence
 - Dead code is caught by a mandatory caller check, not by periodic cleanup
 - Cross-module inconsistencies surface in Phase 4's invariant check
 - Bug fixes become class-wide audits rather than local patches
 - The validator confirms behavior, not structural correctness — which is the appropriate division of responsibility
 
-The core invariant of the whole process: **a stage is not done when tests pass. A stage is done when an independent reviewer has verified that the tests are protective, the code is clean, and the contracts are consistent.**
+The core invariant of the whole process: **a work item is not done when tests pass. A work item is done when an independent reviewer has verified that the tests are protective, the code is clean, and the contracts are consistent.**
