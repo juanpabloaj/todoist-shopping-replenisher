@@ -5,12 +5,13 @@ from __future__ import annotations
 from datetime import date
 import logging
 from pathlib import Path
+import sqlite3
 
 import pytest
 
 from shopping_replenisher.config import AppConfig
 from shopping_replenisher.reporter import ReportArtifacts
-from shopping_replenisher.runner import RunResult, run_pipeline
+from shopping_replenisher.runner import RunResult, build_pipeline_candidates, run_pipeline
 from shopping_replenisher.scoring import ScoredItem
 from shopping_replenisher.selection import Candidate
 
@@ -235,6 +236,26 @@ def test_run_pipeline_logs_telegram_error_details(
 
     assert result.added_task_ids == ["task-milk"]
     assert "telegram notification failed error=telegram boom" in caplog.text
+
+
+def test_build_pipeline_candidates_logs_and_reraises_sqlite_errors(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The shared pipeline helper should log db_path and re-raise SQLite errors."""
+
+    config = _build_config()
+
+    def fake_connect(path: Path) -> _FakeConnection:
+        _ = path
+        raise sqlite3.OperationalError("db unavailable")
+
+    monkeypatch.setattr("shopping_replenisher.runner.sqlite3.connect", fake_connect)
+
+    with caplog.at_level(logging.ERROR), pytest.raises(sqlite3.OperationalError):
+        build_pipeline_candidates(config)
+
+    assert "failed reading Todoist SQLite db_path=/tmp/todoist.db" in caplog.text
 
 
 def _build_config() -> AppConfig:

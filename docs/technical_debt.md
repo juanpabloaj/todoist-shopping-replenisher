@@ -15,13 +15,14 @@ Use this file as the current backlog of engineering issues that should be review
   - Expected outcome: invalid timezone names should raise `ConfigError` during `load_config()`, with direct tests covering valid and invalid cases.
   - Resolved: `load_config()` now calls `ZoneInfo(value)` at load time and raises `ConfigError` for invalid IANA names. Three tests added: valid timezone, invalid timezone, absent timezone.
 
-- [ ] Reduce duplicated pipeline logic between `predict` and `run`
+- [x] Reduce duplicated pipeline logic between `predict` and `run`
   - Problem: `shopping_replenisher/cli.py` and `shopping_replenisher/runner.py` still contain overlapping data-loading and pipeline-building logic.
   - Why it matters: this creates drift risk when business rules or signatures change.
   - Relevant files:
     - `shopping_replenisher/cli.py`
     - `shopping_replenisher/runner.py`
   - Expected outcome: shared pipeline preparation should live behind one helper or service-level function, with CLI and runner using the same contract.
+  - Resolved: `build_pipeline_candidates(config)` added to `runner.py`; `run_pipeline` and `predict` both delegate to it. `_resolve_today` / `resolve_generated_at` consolidated in `runner.py`. Phase artifacts in `docs/artifacts/pipeline_dedup/`.
 
 ## Medium Priority
 

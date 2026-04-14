@@ -3,24 +3,18 @@
 from __future__ import annotations
 
 import argparse
-from datetime import date, datetime
 import json
 import logging
 from pathlib import Path
-import sqlite3
 from typing import Sequence
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from shopping_replenisher.config import AppConfig, ConfigError, load_config
-from shopping_replenisher.db import (
-    fetch_active_items,
-    fetch_completed_task_rows,
-    fetch_completion_event_rows,
-)
-from shopping_replenisher.history import build_item_histories, build_purchase_occurrences
 from shopping_replenisher.reporter import build_summary_payload, write_report_artifacts
-from shopping_replenisher.runner import run_pipeline
-from shopping_replenisher.selection import Candidate, select_candidates
+from shopping_replenisher.runner import (
+    build_pipeline_candidates,
+    resolve_generated_at,
+    run_pipeline,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -100,8 +94,8 @@ def _handle_predict(config: AppConfig, output_json: bool) -> int:
     """Handle the local prediction flow."""
 
     logger.info("predict started")
-    candidates = _build_prediction_candidates(config)
-    generated_at = _resolve_generated_at(config)
+    candidates = build_pipeline_candidates(config)
+    generated_at = resolve_generated_at(config)
     artifacts = write_report_artifacts(
         candidates,
         reports_root=Path("reports"),
@@ -115,30 +109,6 @@ def _handle_predict(config: AppConfig, output_json: bool) -> int:
     return 0
 
 
-def _build_prediction_candidates(config: AppConfig) -> list[Candidate]:
-    """Build prediction candidates for the local diagnostic flow."""
-
-    with sqlite3.connect(config.todoist_db_path) as conn:
-        active_items = fetch_active_items(conn, config.shopping_project_id)
-        completion_events = fetch_completion_event_rows(conn, config.shopping_project_id)
-        completed_tasks = fetch_completed_task_rows(conn, config.shopping_project_id)
-
-    occurrences = build_purchase_occurrences(
-        completion_events,
-        completed_tasks,
-        timezone_name=config.timezone,
-    )
-    histories = build_item_histories(occurrences, timezone_name=config.timezone)
-    today = _resolve_today(config)
-    candidates = select_candidates(
-        histories=histories,
-        active_items=active_items,
-        config=config,
-        today=today,
-    )
-    return candidates
-
-
 def _handle_run(config: AppConfig, apply_mode: bool) -> int:
     """Handle the full pipeline command."""
 
@@ -146,30 +116,6 @@ def _handle_run(config: AppConfig, apply_mode: bool) -> int:
     if result.report_artifacts is not None:
         logger.info("run report written path=%s", result.report_artifacts.report_dir)
     return 1 if result.failed_items else 0
-
-
-def _resolve_today(config: AppConfig) -> date:
-    """Resolve the current date using the configured timezone when valid."""
-
-    if config.timezone is None:
-        return date.today()
-
-    try:
-        return datetime.now(ZoneInfo(config.timezone)).date()
-    except ZoneInfoNotFoundError:
-        return date.today()
-
-
-def _resolve_generated_at(config: AppConfig) -> datetime:
-    """Resolve the report timestamp using the configured timezone when valid."""
-
-    if config.timezone is None:
-        return datetime.now()
-
-    try:
-        return datetime.now(ZoneInfo(config.timezone))
-    except ZoneInfoNotFoundError:
-        return datetime.now()
 
 
 def _configure_logging(log_level: str) -> None:

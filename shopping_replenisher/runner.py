@@ -40,29 +40,7 @@ def run_pipeline(config: AppConfig, apply_mode: bool) -> RunResult:
     """Run the full local pipeline, with optional external side effects."""
 
     logger.info("run started apply_mode=%s", apply_mode)
-
-    try:
-        with sqlite3.connect(config.todoist_db_path) as conn:
-            active_items = fetch_active_items(conn, config.shopping_project_id)
-            completion_events = fetch_completion_event_rows(conn, config.shopping_project_id)
-            completed_tasks = fetch_completed_task_rows(conn, config.shopping_project_id)
-    except sqlite3.Error:
-        logger.error("failed reading Todoist SQLite db_path=%s", config.todoist_db_path)
-        raise
-
-    occurrences = build_purchase_occurrences(
-        completion_events,
-        completed_tasks,
-        timezone_name=config.timezone,
-    )
-    histories = build_item_histories(occurrences, timezone_name=config.timezone)
-    today = _resolve_today(config)
-    candidates = select_candidates(
-        histories=histories,
-        active_items=active_items,
-        config=config,
-        today=today,
-    )
+    candidates = build_pipeline_candidates(config)
 
     auto_add_candidates = [candidate for candidate in candidates if candidate.auto_add]
     optional_candidates = [
@@ -78,7 +56,7 @@ def run_pipeline(config: AppConfig, apply_mode: bool) -> RunResult:
 
     report_artifacts: ReportArtifacts | None = None
     if apply_mode and auto_add_candidates:
-        generated_at = _resolve_generated_at(config)
+        generated_at = resolve_generated_at(config)
         report_artifacts = write_report_artifacts(
             candidates,
             reports_root=Path("reports"),
@@ -131,6 +109,33 @@ def run_pipeline(config: AppConfig, apply_mode: bool) -> RunResult:
     )
 
 
+def build_pipeline_candidates(config: AppConfig) -> list[Candidate]:
+    """Build scored candidates from the Todoist SQLite data source."""
+
+    try:
+        with sqlite3.connect(config.todoist_db_path) as conn:
+            active_items = fetch_active_items(conn, config.shopping_project_id)
+            completion_events = fetch_completion_event_rows(conn, config.shopping_project_id)
+            completed_tasks = fetch_completed_task_rows(conn, config.shopping_project_id)
+    except sqlite3.Error:
+        logger.error("failed reading Todoist SQLite db_path=%s", config.todoist_db_path)
+        raise
+
+    occurrences = build_purchase_occurrences(
+        completion_events,
+        completed_tasks,
+        timezone_name=config.timezone,
+    )
+    histories = build_item_histories(occurrences, timezone_name=config.timezone)
+    today = _resolve_today(config)
+    return select_candidates(
+        histories=histories,
+        active_items=active_items,
+        config=config,
+        today=today,
+    )
+
+
 def _resolve_today(config: AppConfig) -> date:
     """Resolve the current date using the configured timezone when valid."""
 
@@ -142,7 +147,7 @@ def _resolve_today(config: AppConfig) -> date:
         return date.today()
 
 
-def _resolve_generated_at(config: AppConfig) -> datetime:
+def resolve_generated_at(config: AppConfig) -> datetime:
     """Resolve the report timestamp using the configured timezone when valid."""
 
     if config.timezone is None:

@@ -6,14 +6,14 @@ from pathlib import Path
 
 import pytest
 
-from shopping_replenisher.cli import _build_prediction_candidates
+from shopping_replenisher.cli import _handle_predict
 from shopping_replenisher.config import AppConfig
 from shopping_replenisher.scoring import ScoredItem
 from shopping_replenisher.selection import Candidate
 
 
-def test_build_prediction_candidates_runs_local_pipeline(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The predict helper should compose the local pipeline stages and return candidates."""
+def test_handle_predict_uses_shared_pipeline_builder(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Predict should delegate candidate building to the shared runner helper."""
 
     config = _build_config()
     expected_candidates = [
@@ -36,40 +36,36 @@ def test_build_prediction_candidates_runs_local_pipeline(monkeypatch: pytest.Mon
             auto_add=True,
         )
     ]
+    calls: dict[str, object] = {}
 
-    monkeypatch.setattr("shopping_replenisher.cli.sqlite3.connect", _fake_connect)
     monkeypatch.setattr(
-        "shopping_replenisher.cli.fetch_active_items",
-        lambda conn, project_id: ["active-items"],
+        "shopping_replenisher.cli.build_pipeline_candidates",
+        lambda config: calls.setdefault("candidates", expected_candidates),
     )
     monkeypatch.setattr(
-        "shopping_replenisher.cli.fetch_completion_event_rows",
-        lambda conn, project_id: ["completion-events"],
+        "shopping_replenisher.cli.resolve_generated_at",
+        lambda config: __import__("datetime").datetime(2026, 4, 9, 12, 0, 0),
     )
     monkeypatch.setattr(
-        "shopping_replenisher.cli.fetch_completed_task_rows",
-        lambda conn, project_id: ["completed-tasks"],
+        "shopping_replenisher.cli.write_report_artifacts",
+        lambda candidates, reports_root, generated_at: calls.setdefault(
+            "artifacts",
+            type(
+                "Artifacts",
+                (),
+                {"report_dir": Path("reports/20260409T120000")},
+            )(),
+        ),
     )
     monkeypatch.setattr(
-        "shopping_replenisher.cli.build_purchase_occurrences",
-        lambda completion_events, completed_tasks, timezone_name=None: ["occurrences"],
-    )
-    monkeypatch.setattr(
-        "shopping_replenisher.cli.build_item_histories",
-        lambda occurrences, timezone_name=None: {"milk": "history"},
-    )
-    monkeypatch.setattr(
-        "shopping_replenisher.cli._resolve_today",
-        lambda config: __import__("datetime").date(2026, 4, 9),
-    )
-    monkeypatch.setattr(
-        "shopping_replenisher.cli.select_candidates",
-        lambda histories, active_items, config, today: expected_candidates,
+        "shopping_replenisher.cli.build_summary_payload",
+        lambda candidates, generated_at: {"candidates": len(candidates)},
     )
 
-    candidates = _build_prediction_candidates(config)
+    result = _handle_predict(config, output_json=False)
 
-    assert candidates == expected_candidates
+    assert result == 0
+    assert calls["candidates"] == expected_candidates
 
 
 def _build_config() -> AppConfig:
@@ -91,24 +87,3 @@ def _build_config() -> AppConfig:
         log_level="INFO",
         timezone=None,
     )
-
-
-class _FakeConnection:
-    """Minimal context-manager connection for CLI tests."""
-
-    def __enter__(self) -> "_FakeConnection":
-        """Enter the connection context manager."""
-
-        return self
-
-    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
-        """Exit the connection context manager."""
-
-        return None
-
-
-def _fake_connect(path: Path) -> _FakeConnection:
-    """Return a fake SQLite connection."""
-
-    _ = path
-    return _FakeConnection()
