@@ -1,6 +1,6 @@
 # Agent-Driven Development: Quality and Closure Process
 
-A workflow proposal for projects where autonomous agents implement and a reviewer validates.
+A workflow proposal for projects where autonomous agents implement and a reviewer validates. It applies at any granularity: large development stages, individual feature tasks, bug fixes, or technical debt items.
 
 ---
 
@@ -190,7 +190,7 @@ Each entry includes: the item count that triggered the check, answers to the six
 
 ### Rule
 
-If a Process Check is due and both agents skip it to start the next item, that is itself a workflow violation. Record it in `docs/process_audit.md` and explain why it was skipped.
+If a Process Check is due and both agents skip it to start the next item, that is itself a workflow violation. Record it in the project's audit file and explain why it was skipped.
 
 ---
 
@@ -288,6 +288,17 @@ Agents do not share memory. Each role operates with its own context window and h
 
 Each phase must produce a durable artifact before the next phase begins. These do not need to be long — they need to be legible, structured, and written to disk.
 
+A suggested layout per task (adapt to project conventions):
+
+```
+docs/artifacts/<task-slug>/
+    contract_brief.md        # Phase 1
+    judgment_check.md        # Phase 1.5 (when triggered)
+    implementation_record.md # Phase 2-3
+    review_verdict.md        # Phase 4
+    validation_record.md     # Phase 5 (when required)
+```
+
 | Phase | Artifact | Produced by |
 |---|---|---|
 | Phase 1 | Contract brief: inputs, outputs, failure behavior, new config, new invariants, open assumptions | Reviewer + Implementor |
@@ -296,7 +307,7 @@ Each phase must produce a durable artifact before the next phase begins. These d
 | Phase 4 | Review verdict: pass / blocked / pass-with-debt, findings, missing tests, items escalated to debt | Reviewer |
 | Phase 5 | Validation record: what was run, with what data, what passed, what failed, exact reproduction details | Validator |
 
-No stage is considered closed unless the relevant handoff artifacts exist in durable form.
+No stage is considered closed unless the relevant handoff artifacts exist in durable form (written to a persistent project artifact — for example, versioned docs, tracked task files, or an equivalent repository location).
 
 **Artifact synchronization rule**: if code changes after a Phase 4 review verdict, any affected artifact for that task must be updated before the task is considered closed. A Pass verdict does not freeze the artifact set — it freezes the review criterion. If the implementation continues to evolve, the artifacts must follow.
 
