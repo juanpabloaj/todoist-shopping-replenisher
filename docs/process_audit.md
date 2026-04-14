@@ -1,138 +1,140 @@
-# Process Audit
+# Process Audit 001
 
-Rolling record of periodic workflow self-audits. Each entry covers the last 3 closed items before the entry was written. Entries are appended in order.
+## Scope
 
----
+Second multi-agent trial using:
+- `codex` as implementor
+- `claude` as reviewer/validator
+- external orchestration through tmux plus durable artifacts
 
-## Entry 1 — Retroactive audit: all 8 technical debt items (2026-04-13)
+Repository under test:
+- `todoist_shopping_replenisher`
 
-**Trigger**: retroactive Process Check after completing all items in `docs/technical_debt.md`. Applied to: TIMEZONE validation, pipeline dedup, HTTP failure coverage, Telegram empty branch, CLI behavioral tests, normalization plural, DB ordering, report collision, docs audit.
+Comparison baseline:
+- a previous multi-agent trial in another repository
 
-**Participants**: Claude (reviewer) + Codex (implementor)
+## Outcome
 
----
+WI-001 closed as `pass_with_debt`.
 
-### Q1. Did Phase 4 actually happen independently, or did it lean on implementor framing?
+Technical result:
+- the repository received a meaningful improvement set
+- the implementor added real fixes and hardening
+- the reviewer validated the changes and closed with explicit debt
 
-**Claude**: Genuinely independent on later items (DB ordering, report collision, docs audit). On earlier items I was inconsistent — the Telegram empty branch is the clearest failure: I allowed the task to close as "test-only" when the production branch was still unguarded. I accepted the implementor's framing too quickly.
+Process result:
+- the trial ended more cleanly than the earlier external trial
+- but the same central failure mode repeated: stale review after filesystem changes
 
-**Codex**: Some Phase 4 reviews were substantive (pipeline dedup, HTTP coverage, docs audit). But early and mid-process Phase 4 was not consistently independent. The Telegram empty branch is the clearest case of Phase 4 not challenging scope aggressively enough.
+## What Improved Compared To Trial 1
 
-**Verdict**: Phase 4 was not reliably independent across the full batch. It improved materially after the Telegram failure exposed the gap.
+1. The implementor completed the work with fewer process misses.
+- In the first trial, the implementor delayed required artifacts and had to be pushed repeatedly to write them.
+- In this second trial, the implementor produced the contract, implementation record, validation record, and board updates in a more orderly way.
 
----
+2. The final technical work was better scoped.
+- In the first trial, there was a notable gap between the initial task framing and the actual useful work, and the implementor had to broaden the scope mid-flight.
+- In this second trial, the implementor identified a concrete set of repository-wide improvements and delivered them coherently.
 
-### Q2. Were any accepted risks weakly justified?
+3. The reviewer’s final verdict was structurally better.
+- The final review clearly separated:
+  - verified improvements
+  - accepted debt
+  - remaining non-blocking concerns
+- The final board state and review artifact were consistent.
 
-**Claude**: Yes. Early risk notes (before risk classification was added) used soft language without anchoring to explicit Phase 1 exclusions. The Telegram empty branch accepted risk that was actually scope insufficiency.
+4. The artifact set was stronger.
+- The implementation record and validation record were materially useful, not decorative.
+- They made it easier to compare the reviewer’s claims against the actual code state.
 
-**Codex**: Confirmed. The clearest case: Telegram empty branch residual was treated as harmless when it was not. Other tasks had exclusions implied in conversation but not durable in artifacts.
+## What Repeated From Trial 1
 
-**Verdict**: Yes. Motivated the explicit exclusion + invariant requirement in Phase 1 and mandatory classification in Phase 3.
+1. The reviewer became stale after code and artifact changes.
+- This happened in the earlier external trial.
+- It happened again here.
+- In both cases, the reviewer continued from an earlier blocked narrative instead of replacing it immediately with a fresh filesystem-based review.
 
----
+2. The orchestrator still had to correct review drift explicitly.
+- In both trials, external intervention was needed to force the reviewer to stop relying on prior state and re-check current files.
+- This confirms that the reviewer does not yet enforce the re-review rule reliably on its own.
 
-### Q3. Did any deferred debt item turn out to be scope insufficiency in disguise?
+3. tmux remained only an execution layer.
+- As in the first trial, tmux was useful for launching and observing agents.
+- It did not solve semantic coordination.
+- The real source of truth remained the board, artifacts, and direct file inspection.
 
-**Claude**: Yes — the Telegram empty branch. The test was removed but the production branch was left unguarded. That was scope insufficiency, not an acceptable tradeoff.
+## What Was Better Than Trial 1
 
-**Codex**: Confirmed. That is the exact pattern now labeled scope insufficiency. Other items (TIMEZONE, pipeline dedup) had artifact problems, not scope problems. The remaining items showed no signs of hidden scope insufficiency.
+The reviewer did not miss a real technical bug this time.
+- In the first trial, the reviewer found a genuine syntax bug introduced by the implementor, and this was valuable.
+- In the second trial, the reviewer’s main problem was stale process state, not a missed technical defect.
+- That suggests the technical quality of the implementor’s work was stronger in the second run.
 
-**Verdict**: One confirmed case. The classification requirement was added to prevent this from being invisible.
+The implementor also did not repeatedly claim a nonexistent fix after direct file verification pressure was applied.
+- In the first trial, that happened and required several correction loops.
+- In the second trial, the main friction was review freshness rather than false fix claims.
 
----
+## Main Remaining Failure Mode
 
-### Q4. Did any artifact become stale immediately after closure?
+The dominant unresolved problem is now clear:
 
-**Claude**: Yes. Pipeline dedup artifacts referred to `_resolve_generated_at` after the code was corrected to `resolve_generated_at`. Telegram empty branch artifacts initially omitted the follow-up production change to `send_run_summary()`. TIMEZONE artifacts were missing entirely and had to be backfilled retroactively.
+> A reviewer that has already issued a blocked verdict tends to remain anchored to that prior narrative even after the filesystem changes.
 
-**Codex**: Confirmed. Artifact staleness happened repeatedly and was a real traceability problem. This justified adding the artifact synchronization rule.
+This is the failure mode most likely to corrupt multi-agent closure.
 
-**Verdict**: Three confirmed cases. The new artifact synchronization rule (if code changes after Phase 4 Pass, affected artifacts must be updated before closure) directly addresses this.
+The workflow rule already says re-review must be based on the current filesystem state. The problem is not that the rule is missing. The problem is that it is not being followed reliably without orchestration pressure.
 
----
+## Comparison Summary
 
-### Q5. Is there a recurring failure mode the workflow does not address?
+### Trial 1: previous external repository
+- More chaotic
+- Stronger technical bug caught by reviewer
+- Weaker artifact discipline from implementor
+- More direct orchestrator intervention needed on both sides
 
-**Claude**: The main residual risk: follow-up commits that land after a Phase 4 verdict without triggering artifact updates. The artifact synchronization rule now covers this, but it depends on the agents enforcing it — there is no automated check.
+### Trial 2: `todoist_shopping_replenisher`
+- Cleaner implementation and artifact production
+- Better final technical outcome
+- Reviewer still drifted stale after state changes
+- Final closure was achieved, but only after explicit re-review forcing
 
-**Codex**: Agreed. Most recurring failures from this batch are now addressed. The remaining weak point is partial compliance: artifacts written but not maintained, Phase 4 performed but not independently enough, accepted risks named without checking whether the exclusion truly holds.
+## Process Judgment
 
-**Verdict**: The revised workflow covers the known failure modes. The next risk is degraded compliance over time, not missing mechanisms.
+The method is improving, but the core autonomy problem is not solved.
 
----
+What the trials now show consistently:
+- implementor/reviewer separation is valuable
+- durable artifacts are valuable
+- tmux is useful operationally
+- stale review is the main coordination failure mode
 
-### Q6. Should anything be removed, simplified, or strengthened?
+This means the method is usable, but not yet safely self-propelled.
 
-**Claude**: Simplified: merged `change_summary.md` + `risk_note.md` → `implementation_record.md`. Added: Process Check section. Added: artifact synchronization rule. The four non-negotiable mechanisms (risk classification, Phase 4 independence, Phase 1.5 judgment check, explicit exclusions) should remain.
+## Recommended Next Rule
 
-**Codex**: The simplification is correct. Nothing major should be removed from the revised workflow. The mechanisms that proved valuable are exactly those four. The artifact synchronization rule is the one new addition this audit identified as necessary.
+Add an operational re-review trigger that is impossible to ignore:
 
-**Verdict**: Changes applied in this session. No further changes needed.
+> If a review verdict is older than the latest code or artifact change, the board must not remain `ready_for_review`; it must move to a distinct `re_review_required` state until the reviewer re-reads the current filesystem state and rewrites the verdict.
 
----
+Reason:
+- `ready_for_review` is too weak once a stale verdict already exists
+- a separate state makes the coordination problem visible immediately
 
-### Workflow changes required
+## Secondary Recommendation
 
-- **Applied**: `implementation_record.md` replaces separate `change_summary.md` + `risk_note.md`
-- **Applied**: Process Check section added to `docs/agent_workflow_process.md`
-- **Applied**: Artifact synchronization rule added to Handoff Artifacts section
+Require the reviewer to explicitly reference current-file evidence in any blocking verdict after a resubmission.
 
-### Tasks or artifacts to reopen
+That means:
+- quote the current file content or command result
+- do not cite earlier grep output or earlier review text
 
-None. The artifact problems identified (pipeline dedup, Telegram branch, TIMEZONE) were corrected retroactively in the previous session. No current artifact is known to contradict code state.
+## Final Assessment
 
----
+Compared to the first trial, this second trial shows better technical execution and better artifact hygiene.
 
-## Entry 2 — Workflow document revision (2026-04-13)
+However, both trials converge on the same conclusion:
+- the workflow is useful
+- the role split is useful
+- but the reviewer still needs stronger forcing around fresh-state review after changes
 
-**Trigger**: joint evaluation of whether the agent division-of-labor workflow was adding real value vs. bureaucratic overhead. User raised concern about sycophantic drift in recent iterations.
-
-**Participants**: Claude (reviewer) + Codex (implementor/drafter)
-
----
-
-### Q1. Did Phase 4 actually happen independently?
-
-Not applicable — this entry covers a workflow document revision, not a code work item. The revision process was itself the subject of independent review: Codex drafted from scratch, Claude reviewed for gaps over two passes, before finalizing.
-
-### Q2. Were any accepted risks weakly justified?
-
-Not applicable. No code changes.
-
-### Q3. Did any deferred debt turn out to be scope insufficiency?
-
-Not applicable.
-
-### Q4. Did any artifact become stale immediately after closure?
-
-The previous `agent_workflow_process.md` had accumulated complexity from incremental additions. It was not stale in the sense of contradicting code, but it had become harder to read and port to new projects than intended.
-
-### Q5. Is there a recurring failure mode the workflow does not address?
-
-**Sycophantic drift**: agents iterating on the workflow in response to each other tend toward agreement rather than independent critique. The user identified this correctly. The corrective was to reset: Codex built a new proposal from scratch against an explicit objective, and Claude reviewed it adversarially over two passes before accepting.
-
-The workflow document now has a Final Principle that makes this detectable: "If the human is repeatedly catching obvious mistakes, the workflow is failing no matter how complete the paperwork looks."
-
-### Q6. Should anything be removed, simplified, or strengthened?
-
-**Applied**: `docs/agent_workflow_process.md` replaced with a substantially shorter version (approx. 40% shorter). All critical mechanisms preserved or better integrated:
-
-- Judgment challenge mechanism moved from standalone Phase 1.5 into the Contract step as a trigger condition — same function, less ceremony
-- Self-review prompts added explicitly in Implementation step — were previously in Phase 3 but not labeled as prompts
-- Bug Response section added — was missing from original
-- Artifact synchronization rule preserved in Minimum Evidence for Closure
-- Checklists A/B/C/D removed as appendices — content integrated into steps
-- Final Principle added — meta-test for whether the workflow is working
-
----
-
-### Workflow changes required
-
-- **Applied**: `docs/agent_workflow_process.md` replaced with simplified version drafted by Codex and reviewed by Claude over two independent passes.
-
-### Tasks or artifacts to reopen
-
-None.
-
----
+That is the next problem to solve.
