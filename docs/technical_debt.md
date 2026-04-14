@@ -38,7 +38,7 @@ Use this file as the current backlog of engineering issues that should be review
   - Expected outcome: each failure mode has a direct regression test and raises the correct wrapped error.
   - Resolved: 4 tests added (ok=false, invalid JSON x2, missing id). Each asserts on error message string. Phase artifacts in `docs/artifacts/http_failure_coverage/`.
 
-- [ ] Decide whether the empty Telegram summary branch should exist
+- [x] Decide whether the empty Telegram summary branch should exist
   - Problem: `_build_run_summary_message([], []) == "Replenisher"` is still supported, but current production flow should not call Telegram with empty additions.
   - Why it matters: this is either dead behavior or an undocumented fallback path.
   - Relevant files:
@@ -46,6 +46,7 @@ Use this file as the current backlog of engineering issues that should be review
     - `shopping_replenisher/runner.py`
     - `tests/test_telegram.py`
   - Expected outcome: either remove the branch and its test, or document why it is intentionally kept.
+  - Resolved: removed `test_build_run_summary_message_for_empty_input_is_minimal`. The `runner.py` guard `if added_task_ids:` is the real invariant. Phase artifacts in `docs/artifacts/telegram_empty_branch/`.
 
 - [ ] Strengthen CLI tests so they validate behavior, not only mocked wiring
   - Problem: `tests/test_cli.py` currently monkeypatches most of the pipeline and mainly proves composition.
