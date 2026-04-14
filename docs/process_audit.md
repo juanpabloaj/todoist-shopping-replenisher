@@ -83,3 +83,56 @@ Rolling record of periodic workflow self-audits. Each entry covers the last 3 cl
 None. The artifact problems identified (pipeline dedup, Telegram branch, TIMEZONE) were corrected retroactively in the previous session. No current artifact is known to contradict code state.
 
 ---
+
+## Entry 2 — Workflow document revision (2026-04-13)
+
+**Trigger**: joint evaluation of whether the agent division-of-labor workflow was adding real value vs. bureaucratic overhead. User raised concern about sycophantic drift in recent iterations.
+
+**Participants**: Claude (reviewer) + Codex (implementor/drafter)
+
+---
+
+### Q1. Did Phase 4 actually happen independently?
+
+Not applicable — this entry covers a workflow document revision, not a code work item. The revision process was itself the subject of independent review: Codex drafted from scratch, Claude reviewed for gaps over two passes, before finalizing.
+
+### Q2. Were any accepted risks weakly justified?
+
+Not applicable. No code changes.
+
+### Q3. Did any deferred debt turn out to be scope insufficiency?
+
+Not applicable.
+
+### Q4. Did any artifact become stale immediately after closure?
+
+The previous `agent_workflow_process.md` had accumulated complexity from incremental additions. It was not stale in the sense of contradicting code, but it had become harder to read and port to new projects than intended.
+
+### Q5. Is there a recurring failure mode the workflow does not address?
+
+**Sycophantic drift**: agents iterating on the workflow in response to each other tend toward agreement rather than independent critique. The user identified this correctly. The corrective was to reset: Codex built a new proposal from scratch against an explicit objective, and Claude reviewed it adversarially over two passes before accepting.
+
+The workflow document now has a Final Principle that makes this detectable: "If the human is repeatedly catching obvious mistakes, the workflow is failing no matter how complete the paperwork looks."
+
+### Q6. Should anything be removed, simplified, or strengthened?
+
+**Applied**: `docs/agent_workflow_process.md` replaced with a substantially shorter version (approx. 40% shorter). All critical mechanisms preserved or better integrated:
+
+- Judgment challenge mechanism moved from standalone Phase 1.5 into the Contract step as a trigger condition — same function, less ceremony
+- Self-review prompts added explicitly in Implementation step — were previously in Phase 3 but not labeled as prompts
+- Bug Response section added — was missing from original
+- Artifact synchronization rule preserved in Minimum Evidence for Closure
+- Checklists A/B/C/D removed as appendices — content integrated into steps
+- Final Principle added — meta-test for whether the workflow is working
+
+---
+
+### Workflow changes required
+
+- **Applied**: `docs/agent_workflow_process.md` replaced with simplified version drafted by Codex and reviewed by Claude over two independent passes.
+
+### Tasks or artifacts to reopen
+
+None.
+
+---
