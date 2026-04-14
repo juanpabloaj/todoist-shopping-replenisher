@@ -1,17 +1,14 @@
-# Phase 3 — Risk Note: Remove Empty Telegram Summary Test
+# Phase 3 — Risk Note: Decide Whether the Empty Telegram Summary Branch Should Exist
 
-## Residual Risks
+## Residual Issues
 
-- The empty-input branch still exists in `telegram.py`, so future refactors could keep carrying it forward unless it is removed explicitly in a later task.
-- If a future caller bypasses the `runner.py` guard and invokes `send_run_summary()` directly with empty additions, there is no longer a dedicated test for that behavior. This is acceptable under the current contract because that state is considered unreachable in production.
+### 1. Empty-input branch still existed in `telegram.py` after test removal
+**Classification: scope insufficiency** *(retrospective — this item caused scope expansion via commit 9c01bee)*
+The original scope ("test-only, no production changes") was insufficient. Removing the test that asserted on the empty-input path without enforcing the invariant at the production boundary left `telegram.py` able to silently process an empty-additions call. When this item was reviewed independently after the initial closure, it was determined that `send_run_summary()` itself should guard against empty `added_task_ids`. The fix was added in commit 9c01bee.
 
-## What Was Not Changed
+**Lesson recorded**: an item that describes a production behavior inconsistency cannot be classified as "accepted risk" unless a Phase 1 exclusion explicitly covers it with a justifying invariant. "The runner already guards it" justifies not adding a *test*, but does not justify leaving the module boundary unprotected.
 
-- `telegram.py` was not modified.
-- `runner.py` was not modified.
-- The invariant remains that `send_run_summary()` should only be called when at least one item was successfully added.
-
-## What Needs Reviewer Attention
-
-- Confirm no other test still treats the empty Telegram summary as a supported contract.
-- Confirm the runner guard remains the real protection against the unreachable state.
+## What Was Fully Resolved
+- `send_run_summary()` now returns immediately if `added_task_ids` is empty (commit 9c01bee)
+- Three tests that incorrectly called `send_run_summary` with empty `added_task_ids` were corrected
+- The empty-input path is now explicitly blocked at the Telegram client boundary, not only at the runner

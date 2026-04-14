@@ -12,7 +12,7 @@
 - Added `build_pipeline_candidates(config)` in `shopping_replenisher/runner.py` as the shared DB-to-candidates pipeline helper.
 - `run_pipeline()` now delegates candidate construction to `build_pipeline_candidates()`.
 - `predict` in `shopping_replenisher/cli.py` now uses the same shared helper as `run`.
-- `_resolve_today()` and `_resolve_generated_at()` were removed from `shopping_replenisher/cli.py`; `cli.py` now imports `_resolve_generated_at()` from `runner.py`.
+- `_resolve_today()` and `_resolve_generated_at()` were removed from `shopping_replenisher/cli.py`; the helpers were consolidated in `runner.py`. Per Phase 4 review, `_resolve_generated_at` was renamed to `resolve_generated_at` (removing the private prefix) before committing, since it is imported externally by `cli.py`.
 - The `predict` path now logs `db_path` before re-raising `sqlite3.Error`, aligning it with the `run` path because both go through the same helper.
 
 ## Tests Added or Updated

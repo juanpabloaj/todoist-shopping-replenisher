@@ -1,26 +1,25 @@
-# Phase 2 — Change Summary: Remove Empty Telegram Summary Test
+# Phase 2 — Change Summary: Decide Whether the Empty Telegram Summary Branch Should Exist
 
 ## Files Changed
-
-- `tests/test_telegram.py`
+- `tests/test_telegram.py` (commit 58db0bd)
+- `shopping_replenisher/telegram.py` (commit 9c01bee — scope expanded after Phase 4 review)
+- `tests/test_telegram.py` (commit 9c01bee — three tests updated to pass non-empty added_task_ids)
 
 ## Behavior Changed
 
-- No production behavior changed.
-- Removed `test_build_run_summary_message_for_empty_input_is_minimal` because it asserted on an unreachable production state.
+### commit 58db0bd — remove test asserting on dead path
+- Removed `test_build_run_summary_message_for_empty_input_is_minimal`
+- Removed import of `_build_run_summary_message` from `test_telegram.py`
+- No production code changed in this commit
 
-## Rationale
+### commit 9c01bee — scope expansion: enforce invariant in production
+- Added guard to `send_run_summary()` in `telegram.py`: if `added_task_ids` is empty, return immediately
+- Guard includes comment explaining that the runner already enforces this invariant
+- Updated three existing tests that were calling `send_run_summary(..., added_task_ids=[])` — changed to `added_task_ids=["task-1"]` to respect the now-explicit contract
+- This commit was triggered by the original risk note item being reclassified as **scope insufficiency**
 
-- `runner.py` already guards Telegram delivery behind `if added_task_ids:`.
-- The production flow should never call `send_run_summary()` for an empty-additions case.
-- Keeping the test would incorrectly imply that the empty-input branch is part of the supported contract.
+## Why the Scope Expanded
+The original contract said "test-only, no production changes." The risk note item ("The empty-input branch still exists in telegram.py") was treated as accepted risk, but it was scope insufficiency: removing the test without enforcing the invariant at the module boundary left the production code in a state that could silently allow the empty-input path. The guard in `send_run_summary()` was the correct completion of the task.
 
-## Tests Added or Removed
-
-- Removed:
-  - `test_build_run_summary_message_for_empty_input_is_minimal`
-
-## Known Limitations
-
-- `telegram.py` still contains behavior for empty input, but it is no longer treated as a supported contract in tests.
-- This stage does not remove the production branch itself; it only stops asserting on the unreachable state.
+## Config / Docs Changes
+- `docs/technical_debt.md` — item marked resolved
