@@ -89,6 +89,42 @@ def test_send_run_summary_raises_on_http_error(monkeypatch: pytest.MonkeyPatch) 
     assert "500" in str(exc_info.value)
 
 
+def test_send_run_summary_raises_on_ok_false(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A 200 response with ok=false should raise TelegramAPIError."""
+
+    config = _build_config()
+
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
+        _ = http_request
+        _ = timeout
+        return _FakeResponse('{"ok": false}')
+
+    monkeypatch.setattr("shopping_replenisher.telegram.request.urlopen", fake_urlopen)
+
+    with pytest.raises(TelegramAPIError) as exc_info:
+        send_run_summary(config, [], added_task_ids=[])
+
+    assert "ok" in str(exc_info.value)
+
+
+def test_send_run_summary_raises_on_invalid_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A non-JSON 200 response should raise TelegramAPIError."""
+
+    config = _build_config()
+
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
+        _ = http_request
+        _ = timeout
+        return _FakeResponse("not-json")
+
+    monkeypatch.setattr("shopping_replenisher.telegram.request.urlopen", fake_urlopen)
+
+    with pytest.raises(TelegramAPIError) as exc_info:
+        send_run_summary(config, [], added_task_ids=[])
+
+    assert "JSON" in str(exc_info.value)
+
+
 def test_build_run_summary_message_for_empty_input_is_minimal() -> None:
     """Empty input should produce only the Telegram header."""
 

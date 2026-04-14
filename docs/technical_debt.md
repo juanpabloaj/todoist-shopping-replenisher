@@ -26,7 +26,7 @@ Use this file as the current backlog of engineering issues that should be review
 
 ## Medium Priority
 
-- [ ] Add stronger HTTP client failure-path coverage
+- [x] Add stronger HTTP client failure-path coverage
   - Problem: the clients now test payloads and timeout usage, but not all important bad-response cases.
   - Missing coverage:
     - Telegram `ok=false` response
@@ -36,6 +36,7 @@ Use this file as the current backlog of engineering issues that should be review
     - `tests/test_telegram.py`
     - `tests/test_todoist_api.py`
   - Expected outcome: each failure mode has a direct regression test and raises the correct wrapped error.
+  - Resolved: 4 tests added (ok=false, invalid JSON x2, missing id). Each asserts on error message string. Phase artifacts in `docs/artifacts/http_failure_coverage/`.
 
 - [ ] Decide whether the empty Telegram summary branch should exist
   - Problem: `_build_run_summary_message([], []) == "Replenisher"` is still supported, but current production flow should not call Telegram with empty additions.

@@ -96,6 +96,44 @@ def test_create_task_raises_on_http_error(monkeypatch: pytest.MonkeyPatch) -> No
     assert "400" in str(exc_info.value)
 
 
+def test_create_task_raises_on_invalid_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A non-JSON 200 response should raise TodoistAPIError."""
+
+    config = _build_config(todoist_task_prefix="")
+    candidate = _build_candidate()
+
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
+        _ = http_request
+        _ = timeout
+        return _FakeResponse("not-json")
+
+    monkeypatch.setattr("shopping_replenisher.todoist_api.request.urlopen", fake_urlopen)
+
+    with pytest.raises(TodoistAPIError) as exc_info:
+        create_task(config, candidate)
+
+    assert "JSON" in str(exc_info.value)
+
+
+def test_create_task_raises_on_missing_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A JSON response without id should raise TodoistAPIError."""
+
+    config = _build_config(todoist_task_prefix="")
+    candidate = _build_candidate()
+
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
+        _ = http_request
+        _ = timeout
+        return _FakeResponse("{}")
+
+    monkeypatch.setattr("shopping_replenisher.todoist_api.request.urlopen", fake_urlopen)
+
+    with pytest.raises(TodoistAPIError) as exc_info:
+        create_task(config, candidate)
+
+    assert "id" in str(exc_info.value)
+
+
 def _build_config(*, todoist_task_prefix: str) -> AppConfig:
     """Build a config object for Todoist API tests."""
 
