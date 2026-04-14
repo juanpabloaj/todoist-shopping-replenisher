@@ -27,7 +27,7 @@ The pipeline is a linear read → score → select → write flow, split across 
 
 - **`normalize.py`** — deterministic text normalization pipeline: lowercase → NFKD accent removal → punctuation → whitespace collapse → known variants → light singular/plural heuristic. Conservative by design — no fuzzy matching.
 
-- **`history.py`** — builds `PurchaseOccurrence` and `ItemHistory` from both DB sources. Deduplicates using a two-level hierarchical match (strong: same `task_id` + delta ≤ 5s; medium: same normalized content + same day + delta ≤ 10s). Uses `.astimezone().date()` to convert UTC timestamps to local date before building `occurrence_days`.
+- **`history.py`** — builds `PurchaseOccurrence` and `ItemHistory` from both DB sources. Deduplicates using a two-level hierarchical match (strong: same `task_id` + delta ≤ 5s; medium: same normalized content + same day + delta ≤ 10s). Converts UTC timestamps to local date using `ZoneInfo(TIMEZONE)` when configured, otherwise falls back to system local timezone via `.astimezone().date()`.
 
 - **`scoring.py`** — computes `ScoredItem` features per item: gaps, `typical_gap` (median), `gap_stddev`, `overdue_ratio`, confidence (`low`/`medium`/`high`). Confidence thresholds: high = `unique_days >= 8 AND gap_stddev <= 5.5`, medium = `unique_days >= 4 AND gap_stddev <= 7`.
 
@@ -45,7 +45,7 @@ The pipeline is a linear read → score → select → write flow, split across 
 
 ## Configuration
 
-All configuration via `.env` (never committed). Copy `.env.example` to start. Required vars: `TODOIST_DB_PATH`, `TODOIST_API_TOKEN`, `SHOPPING_PROJECT_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. `IGNORED_ITEMS` is a comma-separated list of normalized item names to exclude from scoring (e.g. `compra`).
+All configuration via `.env` (never committed). Copy `.env.example` to start. Required vars: `TODOIST_DB_PATH`, `TODOIST_API_TOKEN`, `SHOPPING_PROJECT_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. `IGNORED_ITEMS` is a comma-separated list of normalized item names to exclude from scoring (e.g. `compra`). `TIMEZONE` is an optional IANA timezone name (e.g. `America/Santiago`); invalid values raise `ConfigError` at load time.
 
 ## Development Stages
 

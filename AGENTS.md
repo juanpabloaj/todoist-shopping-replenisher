@@ -42,7 +42,7 @@ When a real bug is discovered, search for the same class of issue across the rep
 
 ## Commit & Pull Request Guidelines
 
-Recent history uses short imperative commit messages such as `implement stage 11: logging, hardening, and operational quality`. Follow that style: lead with the action, then scope if useful. Pull requests should include:
+Use short imperative commit messages that lead with the action, then scope if useful. Examples from recent history: `document conservative plural normalization tradeoff`, `add behavioral CLI tests that run the real pipeline with mocked DB`, `document db ordering contract and fix order-dependent test`. Pull requests should include:
 
 - a brief summary of behavior changes
 - any config or schema assumptions
