@@ -156,6 +156,44 @@ Phase 4 is never abbreviated. Phase 5 is required whenever the stage affects a r
 
 ---
 
+## Process Check — Periodic Workflow Audit
+
+The stage workflow governs how individual items close. This section governs how the workflow itself stays honest over time. Without this, process drift accumulates silently.
+
+### Trigger
+
+A Process Check is mandatory in either of these conditions:
+
+- **Every 3 closed items** — before starting the next item, both agents audit the last 3 closures.
+- **Immediately** after any of the following:
+  - A completed task had to be reopened or corrected post-closure
+  - An artifact was found to contradict the final code state
+  - A residual issue was reclassified from accepted risk or deferred debt to scope insufficiency
+  - Phase 4 review appeared to restate implementor conclusions rather than challenge them
+
+### Required questions
+
+Both agents answer these questions independently, then compare. During a Process Check, each agent may inspect shared artifacts and code state, but must not rely on the other agent's judgment about whether the process worked correctly — the same independence rule that applies to Phase 4 applies here.
+
+1. Did Phase 4 actually happen independently, or did it lean on implementor framing?
+2. Were any accepted risks weakly justified — missing a valid Phase 1 exclusion or an invariant that actually holds?
+3. Did any deferred debt item turn out to be scope insufficiency in disguise?
+4. Did any artifact become stale immediately after closure (contradicted by code within one or two tasks)?
+5. Is there a recurring failure mode across the last 3 items that the workflow does not currently address?
+6. Should any existing phase, checklist item, or artifact requirement be removed, simplified, or strengthened?
+
+### Output
+
+Append findings to a rolling audit file kept in the project's documentation directory. Each project maintains its own file; the name and location are decided per project.
+
+Each entry includes: the item count that triggered the check, answers to the six questions, any workflow changes agreed upon, and any task or artifact that must be reopened or corrected as a result. If no changes are needed, record that explicitly — a clean check is also a data point.
+
+### Rule
+
+If a Process Check is due and both agents skip it to start the next item, that is itself a workflow violation. Record it in `docs/process_audit.md` and explain why it was skipped.
+
+---
+
 ## Checklists
 
 ### A. Stage Exit Checklist
@@ -254,12 +292,13 @@ Each phase must produce a durable artifact before the next phase begins. These d
 |---|---|---|
 | Phase 1 | Contract brief: inputs, outputs, failure behavior, new config, new invariants, open assumptions | Reviewer + Implementor |
 | Phase 1.5 | Judgment check record: implementor's answers to the four questions; reviewer's final contract decision and any revised exclusions | Implementor + Reviewer |
-| Phase 2–3 | Change summary: files changed, behavior changed, tests added, known limitations, unresolved concerns | Implementor |
-| Phase 3 | Risk note: each residual issue labeled as **accepted risk** / **deferred debt** / **scope insufficiency**; what was not verified; what needs real-data validation | Implementor |
+| Phase 2–3 | Implementation record: files changed, behavior changed, tests added/run; each residual finding classified as **accepted risk** / **deferred debt** / **scope insufficiency** with Phase 1 exclusion reference | Implementor |
 | Phase 4 | Review verdict: pass / blocked / pass-with-debt, findings, missing tests, items escalated to debt | Reviewer |
 | Phase 5 | Validation record: what was run, with what data, what passed, what failed, exact reproduction details | Validator |
 
 No stage is considered closed unless the relevant handoff artifacts exist in durable form.
+
+**Artifact synchronization rule**: if code changes after a Phase 4 review verdict, any affected artifact for that task must be updated before the task is considered closed. A Pass verdict does not freeze the artifact set — it freezes the review criterion. If the implementation continues to evolve, the artifacts must follow.
 
 ### Facts vs Judgments
 
