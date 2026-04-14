@@ -87,7 +87,7 @@ Use this file as the current backlog of engineering issues that should be review
   - Expected outcome: either accept and document the risk, or make report paths unique beyond second-level precision.
   - Resolved: accepted and documented. Comment added to `write_report_artifacts` naming the silent-overwrite failure mode and the non-concurrent operating model invariant. The fix (adding microseconds) is deferred as this tool is designed for single-user scheduled runs. Phase artifacts in `docs/artifacts/report_collision/`.
 
-- [ ] Re-audit design and README against the final implemented behavior
+- [x] Re-audit design and README against the final implemented behavior
   - Problem: docs have been updated incrementally across many stages and may still contain stale assumptions.
   - Why it matters: contributors may follow outdated behavior instead of the code.
   - Relevant files:
@@ -97,6 +97,7 @@ Use this file as the current backlog of engineering issues that should be review
     - `ROADMAP.md`
     - `docs/`
   - Expected outcome: documentation reflects current production behavior, especially Stage 10-11 operational decisions.
+  - Resolved: corrected four stale sections in DESIGN.md (added `reporter.py` to architecture listing, updated tests listing to all 11 files, added `timezone_name` to history function signatures, replaced stale Telegram output description with actual "Overdue:"/"Coming up:"/"On the radar:" format) and updated ROADMAP.md Current Status. README.md and DEVELOPMENT.md were already current. Phase artifacts in `docs/artifacts/docs_audit/`.
 
 ## Update Rules
 

@@ -118,15 +118,23 @@ todoist_shopping_replenisher/
 │   ├── history.py       # Build purchase history from both sources
 │   ├── scoring.py       # Features and replenishment score
 │   ├── selection.py     # Final filters: dedup, per-run limit, ranking
+│   ├── reporter.py      # Build summary payloads and local report artifacts
 │   ├── todoist_api.py   # Create tasks via Todoist API
 │   ├── telegram.py      # Summary and error notifications
 │   ├── runner.py        # End-to-end orchestration
 │   └── cli.py           # CLI entry points
 └── tests/
+    ├── test_config.py
+    ├── test_db.py
     ├── test_normalize.py
     ├── test_history.py
     ├── test_scoring.py
-    └── test_selection.py
+    ├── test_selection.py
+    ├── test_reporter.py
+    ├── test_runner.py
+    ├── test_todoist_api.py
+    ├── test_telegram.py
+    └── test_cli.py
 ```
 
 ### Key data interfaces
@@ -141,10 +149,12 @@ def fetch_completed_task_rows(conn, project_id) -> list[CompletionRow]
 def build_purchase_occurrences(
     completion_events: list[CompletionRow],
     completed_tasks: list[CompletionRow],
+    timezone_name: str | None = None,
 ) -> list[PurchaseOccurrence]
 
 def build_item_histories(
     occurrences: list[PurchaseOccurrence],
+    timezone_name: str | None = None,
 ) -> dict[str, ItemHistory]
 
 @dataclass
@@ -206,11 +216,13 @@ reports/
     └── candidates.csv
 ```
 
-Telegram message includes:
-- Number of candidates found
-- Items skipped (active duplicate)
-- Items added (with reason)
-- Items in `optional` bucket (report only)
+Telegram summaries are sent in plain text and grouped by urgency:
+
+- `Overdue:` for added `now` items
+- `Coming up:` for added `soon` items
+- `On the radar:` for `optional` items, shown only when present
+
+The message does not include technical metadata such as candidate counts, skipped-active items, or scoring details.
 
 ---
 
