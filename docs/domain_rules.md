@@ -74,6 +74,19 @@ The design allows a light singular/plural heuristic for Spanish and English. The
 
 This is intended to be conservative and traceable. `DESIGN.md` also notes that singular/plural normalization in Spanish is imperfect in v1.
 
+#### Known Imperfect Outputs
+
+Some Spanish `-es` plurals still normalize awkwardly under the conservative final-`s` strip used in v1.
+
+| Input | Canonical form |
+|---|---|
+| `luces` | `luce` |
+| `papeles` | `papele` |
+
+This tradeoff is intentional. Spanish `-es` plurals with spelling changes or different stem behavior cannot be handled safely by a simple suffix rule alone. A rule that strips `-es` would improve some Spanish cases, but it would also break English words such as `noodles` and `pickles` unless the normalizer could reliably distinguish languages.
+
+The conservative `-s` strip is therefore preferred in v1: it avoids incorrect merges at the cost of cosmetic awkwardness in some canonical names. A proper fix would require language detection or a morphology dictionary, which is out of scope for v1.
+
 ### Known Variants
 
 `DESIGN.md` explicitly gives `coca cola` and `coca-cola` as an example of obvious variants that should normalize together.

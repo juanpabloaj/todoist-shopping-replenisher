@@ -57,7 +57,7 @@ Use this file as the current backlog of engineering issues that should be review
   - Expected outcome: at least one test should validate more realistic behavior of `predict` or its helper using less synthetic setup.
   - Resolved: two behavioral tests added that patch only the DB layer and let the real pipeline run. One verifies JSON output structure; one provides real CompletionRow history and verifies a scored candidate is produced. Phase artifacts in `docs/artifacts/cli_behavioral_tests/`.
 
-- [ ] Revisit normalization quality for conservative plural handling
+- [x] Revisit normalization quality for conservative plural handling
   - Problem: current normalization avoids aggressive merges, but still produces awkward canonical names such as `luces -> luce` and `papeles -> papele`.
   - Why it matters: awkward canonical names can affect history grouping, readability, and created Todoist task names.
   - Relevant files:
@@ -65,6 +65,7 @@ Use this file as the current backlog of engineering issues that should be review
     - `tests/test_normalize.py`
     - `docs/domain_rules.md`
   - Expected outcome: either improve the heuristic safely or document the current tradeoff more explicitly.
+  - Resolved: documented the tradeoff in `normalize.py` (comment in `_singularize_word`) and `docs/domain_rules.md` (new "Known Imperfect Outputs" subsection). Improving the heuristic is unsafe without language detection — stripping `-es` would break English words like `noodles`. Phase artifacts in `docs/artifacts/normalization_plural/`.
 
 ## Low Priority
 

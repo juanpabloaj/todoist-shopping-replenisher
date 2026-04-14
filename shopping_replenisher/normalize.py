@@ -52,6 +52,12 @@ def _apply_light_plural_heuristic(text: str) -> str:
 def _singularize_word(word: str) -> str:
     """Singularize a single token conservatively."""
 
+    # Known imperfect outputs are intentional in v1. For example, "luces" becomes
+    # "luce" and "papeles" becomes "papele". A more precise fix is unsafe without
+    # language detection or a morphology dictionary: stripping "-es" would improve
+    # some Spanish plurals but would break English words such as "noodles" ->
+    # "noodl". The conservative final-"s" strip avoids incorrect merges even when
+    # the resulting canonical form is cosmetically awkward.
     if len(word) <= 3:
         return word
 
