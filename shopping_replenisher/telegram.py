@@ -23,6 +23,11 @@ def send_run_summary(
 ) -> None:
     """Send a run summary message to the configured Telegram chat."""
 
+    # The runner only sends summaries after at least one Todoist task was created.
+    # Keep this guard here so the Telegram client enforces the same invariant.
+    if not added_task_ids:
+        return
+
     message = _build_run_summary_message(candidates, added_task_ids)
     _send_message(config, message)
 
