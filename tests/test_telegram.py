@@ -119,6 +119,8 @@ def test_send_run_summary_raises_on_invalid_json(monkeypatch: pytest.MonkeyPatch
         send_run_summary(config, [], added_task_ids=["task-1"])
 
     assert "JSON" in str(exc_info.value)
+
+
 def _build_config() -> AppConfig:
     """Build a config object for Telegram tests."""
 
