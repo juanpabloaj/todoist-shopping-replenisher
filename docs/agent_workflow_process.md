@@ -15,6 +15,7 @@ In staged development with autonomous implementors, the following failure modes 
 - Cross-module inconsistencies go undetected because each stage is reviewed in isolation
 - Real bugs are patched locally without asking whether the same class of bug exists elsewhere
 - Structural review happens at the end of the project, when the cost of fixing is highest
+- Residual issues are recorded as generic "risks" without classification — hiding whether they represent acceptable deferral, tracked debt, or an incomplete stage contract
 
 These failures share a root cause: **the workflow optimized for forward momentum rather than robust closure**. "Tests pass" became the criterion for done. It is not sufficient.
 
@@ -52,6 +53,9 @@ Define before any implementation begins:
 - For each new external integration:
   - What are the operational requirements? (timeout, retry policy, error wrapping)
 - Are there shared concepts this stage touches? (datetime/timezone interpretation, error handling, allowed values, data boundaries)
+- What is explicitly out of scope for this stage, and why?
+  - For each exclusion: state what invariant or existing mechanism makes it safe to exclude.
+  - "No production changes" is not a sufficient exclusion on its own — it must be paired with the reason (e.g., "the runner already enforces this invariant").
 
 This phase produces a short checklist, not a design document. Its purpose is to make implicit contracts explicit before the implementor begins.
 
@@ -71,6 +75,15 @@ Before declaring implementation complete, the implementor must answer:
 - What assumptions does this stage make that differ from other modules?
 - What operational behaviors are absent? (timeouts, retries, fallbacks)
 - If I revert the core change of this stage, which test fails?
+- Does any finding during self-review indicate that the stage contract is too narrow or incomplete?
+
+Every residual issue must be classified as one of the following before declaring done:
+
+- **Accepted risk** — the stage contract is still sufficient; the issue is real but explicitly out of scope and safe to defer. Must reference the Phase 1 exclusion that covers it, and explain why that exclusion still holds after implementation.
+- **Deferred debt** — the issue does not block closure, but must be recorded in the technical debt backlog before the stage is closed.
+- **Scope insufficiency** — the finding indicates the current stage contract is incomplete or misleading. The stage must not be declared done until the contract is amended or the reviewer explicitly approves the narrower scope.
+
+A residual issue may not be recorded as a generic "risk" without one of these three labels.
 
 This is not optional. A stage that cannot answer these questions is not done.
 
@@ -92,6 +105,7 @@ The reviewer must check:
 - Is there duplicated logic that now exists in more than one module?
 - Does at least one test cover invalid input or failure-path behavior for new code?
 - Would at least one test fail if the core change of this stage were reverted?
+- Has the implementor classified every residual issue? For each item labeled "accepted risk", verify it is actually covered by a Phase 1 exclusion — not merely assumed to be out of scope.
 
 If any answer is "unknown", the stage is not closed.
 
@@ -220,7 +234,7 @@ Each phase must produce a durable artifact before the next phase begins. These d
 |---|---|---|
 | Phase 1 | Contract brief: inputs, outputs, failure behavior, new config, new invariants, open assumptions | Reviewer + Implementor |
 | Phase 2–3 | Change summary: files changed, behavior changed, tests added, known limitations, unresolved concerns | Implementor |
-| Phase 3 | Risk note: what still feels risky, what was not fully verified, what needs real-data validation | Implementor |
+| Phase 3 | Risk note: each residual issue labeled as **accepted risk** / **deferred debt** / **scope insufficiency**; what was not verified; what needs real-data validation | Implementor |
 | Phase 4 | Review verdict: pass / blocked / pass-with-debt, findings, missing tests, items escalated to debt | Reviewer |
 | Phase 5 | Validation record: what was run, with what data, what passed, what failed, exact reproduction details | Validator |
 
