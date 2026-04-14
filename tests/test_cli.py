@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime, timedelta
+import json
 from pathlib import Path
 
 import pytest
 
 from shopping_replenisher.cli import _handle_predict
 from shopping_replenisher.config import AppConfig
+from shopping_replenisher.db import CompletionRow
+from shopping_replenisher.reporter import write_report_artifacts as real_write_report_artifacts
 from shopping_replenisher.scoring import ScoredItem
 from shopping_replenisher.selection import Candidate
 
@@ -68,11 +72,118 @@ def test_handle_predict_uses_shared_pipeline_builder(monkeypatch: pytest.MonkeyP
     assert calls["candidates"] == expected_candidates
 
 
-def _build_config() -> AppConfig:
+def test_handle_predict_json_output_has_expected_structure(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Predict should emit valid JSON and write reports when the real pipeline returns no candidates."""
+
+    config = _build_config(todoist_db_path=tmp_path / "todoist.db")
+
+    monkeypatch.setattr("shopping_replenisher.runner.sqlite3.connect", _fake_connect)
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_active_items",
+        lambda conn, project_id: [],
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_completion_event_rows",
+        lambda conn, project_id: [],
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_completed_task_rows",
+        lambda conn, project_id: [],
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.cli.resolve_generated_at",
+        lambda config: datetime(2026, 4, 13, 12, 0, 0),
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.cli.write_report_artifacts",
+        lambda candidates, reports_root, generated_at: real_write_report_artifacts(
+            candidates,
+            reports_root=tmp_path,
+            generated_at=generated_at,
+        ),
+    )
+
+    result = _handle_predict(config, output_json=True)
+
+    stdout = capsys.readouterr().out
+    payload = json.loads(stdout)
+
+    assert result == 0
+    assert "candidates" in payload
+    assert "candidate_count" in payload
+    assert isinstance(payload["candidates"], list)
+    assert (tmp_path / "20260413T120000" / "summary.json").exists()
+
+
+def test_handle_predict_with_history_produces_scored_candidates(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Predict should produce scored candidates when the DB layer returns real history rows."""
+
+    config = _build_config(todoist_db_path=tmp_path / "todoist.db")
+    today = date.today()
+    completion_events = [
+        CompletionRow(
+            task_id=f"T-{index}",
+            content="Milk",
+            completed_at=datetime.combine(
+                today - timedelta(days=days_ago),
+                datetime.min.time(),
+            ),
+        )
+        for index, days_ago in enumerate((35, 28, 21, 14, 7), start=1)
+    ]
+
+    monkeypatch.setattr("shopping_replenisher.runner.sqlite3.connect", _fake_connect)
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_active_items",
+        lambda conn, project_id: [],
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_completion_event_rows",
+        lambda conn, project_id: completion_events,
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.runner.fetch_completed_task_rows",
+        lambda conn, project_id: [],
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.cli.resolve_generated_at",
+        lambda config: datetime(2026, 4, 13, 12, 0, 0),
+    )
+    monkeypatch.setattr(
+        "shopping_replenisher.cli.write_report_artifacts",
+        lambda candidates, reports_root, generated_at: real_write_report_artifacts(
+            candidates,
+            reports_root=tmp_path,
+            generated_at=generated_at,
+        ),
+    )
+
+    result = _handle_predict(config, output_json=True)
+
+    stdout = capsys.readouterr().out
+    payload = json.loads(stdout)
+
+    assert result == 0
+    assert payload["candidate_count"] >= 1
+    first_candidate = payload["candidates"][0]
+    assert first_candidate["canonical_name"] == "milk"
+    assert first_candidate["candidate_class"] in {"now", "soon", "optional"}
+    assert isinstance(first_candidate["auto_add"], bool)
+
+
+def _build_config(*, todoist_db_path: Path | None = None) -> AppConfig:
     """Build a config object for CLI tests."""
 
     return AppConfig(
-        todoist_db_path=Path("/tmp/todoist.db"),
+        todoist_db_path=todoist_db_path or Path("/tmp/todoist.db"),
         todoist_api_token="todoist-token",
         shopping_project_id="project-id",
         telegram_bot_token="bot-token",
@@ -87,3 +198,24 @@ def _build_config() -> AppConfig:
         log_level="INFO",
         timezone=None,
     )
+
+
+class _FakeConnection:
+    """Minimal context-manager connection for CLI tests."""
+
+    def __enter__(self) -> "_FakeConnection":
+        """Enter the connection context manager."""
+
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+        """Exit the connection context manager."""
+
+        return None
+
+
+def _fake_connect(path: Path) -> _FakeConnection:
+    """Return a fake SQLite connection."""
+
+    _ = path
+    return _FakeConnection()

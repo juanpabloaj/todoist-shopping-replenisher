@@ -48,13 +48,14 @@ Use this file as the current backlog of engineering issues that should be review
   - Expected outcome: either remove the branch and its test, or document why it is intentionally kept.
   - Resolved: removed `test_build_run_summary_message_for_empty_input_is_minimal`. The `runner.py` guard `if added_task_ids:` is the real invariant. Phase artifacts in `docs/artifacts/telegram_empty_branch/`.
 
-- [ ] Strengthen CLI tests so they validate behavior, not only mocked wiring
+- [x] Strengthen CLI tests so they validate behavior, not only mocked wiring
   - Problem: `tests/test_cli.py` currently monkeypatches most of the pipeline and mainly proves composition.
   - Why it matters: this gives weak protection against behavioral regressions in `predict`.
   - Relevant files:
     - `tests/test_cli.py`
     - `shopping_replenisher/cli.py`
   - Expected outcome: at least one test should validate more realistic behavior of `predict` or its helper using less synthetic setup.
+  - Resolved: two behavioral tests added that patch only the DB layer and let the real pipeline run. One verifies JSON output structure; one provides real CompletionRow history and verifies a scored candidate is produced. Phase artifacts in `docs/artifacts/cli_behavioral_tests/`.
 
 - [ ] Revisit normalization quality for conservative plural handling
   - Problem: current normalization avoids aggressive merges, but still produces awkward canonical names such as `luces -> luce` and `papeles -> papele`.
