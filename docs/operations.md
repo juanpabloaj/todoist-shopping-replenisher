@@ -58,6 +58,10 @@ Exit code 1 does not abort the run — remaining items are still attempted and T
 
 A Telegram message is sent only when `run --apply` successfully adds at least one item to Todoist. No message is sent for dry runs, empty runs, or runs where all Todoist writes failed.
 
+Candidates classified as `soon` remain visible in `predict` reports, but they do
+not trigger Telegram by themselves unless they also meet
+`AUTO_ADD_MIN_OVERDUE_RATIO` and are successfully created in Todoist.
+
 ## Local DB Freshness
 
 The system reads a local SQLite snapshot of Todoist data maintained by [todoist-local-sync](https://github.com/juanpabloaj/todoist-local-sync). If that sync process is not running, predictions will be based on stale data.

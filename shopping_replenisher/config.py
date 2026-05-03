@@ -30,6 +30,7 @@ class AppConfig:
     min_pattern_occurrences: int
     min_confidence: str
     buy_soon_days: int
+    auto_add_min_overdue_ratio: float
     ignored_items: frozenset[str]
     todoist_task_prefix: str
     log_level: str
@@ -90,6 +91,10 @@ def load_config(
         min_pattern_occurrences=_get_positive_int("MIN_PATTERN_OCCURRENCES", default=4),
         min_confidence=min_confidence,
         buy_soon_days=_get_non_negative_int("BUY_SOON_DAYS", default=7),
+        auto_add_min_overdue_ratio=_get_non_negative_float(
+            "AUTO_ADD_MIN_OVERDUE_RATIO",
+            default=1.0,
+        ),
         ignored_items=_get_ignored_items("IGNORED_ITEMS"),
         todoist_task_prefix=_get_str("TODOIST_TASK_PREFIX", default=""),
         log_level=_get_str("LOG_LEVEL", default="INFO"),
@@ -134,6 +139,18 @@ def _get_int(name: str, default: int) -> int:
         raise ConfigError(f"Environment variable {name} must be an integer.") from exc
 
 
+def _get_float(name: str, default: float) -> float:
+    """Read a float environment variable with a default."""
+
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    try:
+        return float(value)
+    except ValueError as exc:
+        raise ConfigError(f"Environment variable {name} must be a number.") from exc
+
+
 def _get_bool(name: str, default: bool) -> bool:
     """Read a boolean environment variable with a default."""
 
@@ -162,6 +179,15 @@ def _get_non_negative_int(name: str, default: int) -> int:
     """Read an integer environment variable that must be non-negative."""
 
     value = _get_int(name, default)
+    if value < 0:
+        raise ConfigError(f"Environment variable {name} must be greater than or equal to 0.")
+    return value
+
+
+def _get_non_negative_float(name: str, default: float) -> float:
+    """Read a float environment variable that must be non-negative."""
+
+    value = _get_float(name, default)
     if value < 0:
         raise ConfigError(f"Environment variable {name} must be greater than or equal to 0.")
     return value

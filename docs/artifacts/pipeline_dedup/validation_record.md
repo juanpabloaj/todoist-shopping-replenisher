@@ -8,21 +8,21 @@ uv run python -m shopping_replenisher.cli predict --json
 
 ## Data Used
 
-- Real local configuration loaded from the repository environment
-- Real Todoist SQLite database referenced by the configured `TODOIST_DB_PATH`
-- No mocked services or synthetic fixtures
+- Local validation configuration
+- An anonymized Todoist SQLite validation snapshot
+- No external services or network writes
 
 ## What Happened
 
 - The command completed successfully with exit code `0`
 - The predict path logged start and report creation normally
 - A report directory was written:
-  - `reports/20260413T211220`
+  - `reports/<timestamp>`
 - JSON output was printed to stdout as expected
 
 ## Output Produced
 
-First lines of the JSON output:
+Representative first lines of the JSON output:
 
 ```json
 {
@@ -31,18 +31,17 @@ First lines of the JSON output:
     {
       "auto_add": true,
       "candidate_class": "now",
-      "canonical_name": "vacuno",
+      "canonical_name": "item-a",
       "confidence": "high",
       "days_since_last": 9,
-      "gap_stddev": 4.580870550452174,
+      "gap_stddev": 4.5,
       "gaps": [
-        12,
-        17,
-        4,
-        4,
+        7,
+        8,
+        9
 ```
 
-Summary from the real run:
+Summary from the anonymized validation run:
 
 - `candidate_count`: 5
 - `class_counts.now`: 1

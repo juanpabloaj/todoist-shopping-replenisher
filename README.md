@@ -9,7 +9,7 @@ Python tool for analyzing the purchase history of a Todoist shopping project, id
 - Normalizes item names and deduplicates occurrences
 - Computes frequency, gaps, and replenishment signals
 - Classifies candidates as `now`, `soon`, or `optional`
-- In apply mode, creates Todoist tasks and may send a Telegram summary
+- In apply mode, creates Todoist tasks only for candidates that meet the auto-add overdue threshold and may send a Telegram summary
 
 ## Structure
 
@@ -110,5 +110,6 @@ uv run ruff check .
 - `predict` always writes local reports to a unique directory under `reports/`
 - `run --apply` sends Telegram only if at least one item was successfully added
 - User-facing outputs use readable item names from recent history; canonical normalized names remain in the JSON/CSV payload for traceability
+- `BUY_SOON_DAYS` controls `soon` report classification; `AUTO_ADD_MIN_OVERDUE_RATIO` controls which candidates are actually created in Todoist
 - No automatic API retries are implemented; the next cron run is the natural retry path
 - Idempotency depends on the local Todoist SQLite being up to date before the next scheduled run

@@ -15,7 +15,7 @@ Validate `TIMEZONE` during config load (technical_debt.md, High Priority)
 
 ## New configuration behavior
 - `TIMEZONE` was already optional; this stage adds validation at load time
-- Valid: any IANA timezone name accepted by `ZoneInfo()` (e.g. `America/Santiago`)
+- Valid: any IANA timezone name accepted by `ZoneInfo()` (e.g. `Etc/UTC`)
 - Invalid: any name that raises `ZoneInfoNotFoundError` → `ConfigError`
 - Absent: `None` — valid, means host-local time is used
 

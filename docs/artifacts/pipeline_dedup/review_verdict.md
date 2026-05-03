@@ -34,4 +34,4 @@ None. The `_resolve_generated_at` naming issue is a required fix before commit, 
 
 ## What Phase 5 must verify
 
-A real `predict --json` run should produce identical output structure to before the refactor. The validator confirms behavioral correctness of the deduplicated path with real data.
+A validation `predict --json` run should produce identical output structure to before the refactor. The validator confirms behavioral correctness of the deduplicated path with an anonymized validation snapshot.

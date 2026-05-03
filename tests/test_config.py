@@ -77,7 +77,25 @@ def test_load_config_accepts_required_variables(monkeypatch: pytest.MonkeyPatch)
     assert config.telegram_chat_id == "chat-id"
     assert config.auto_apply is False
     assert config.max_items_per_run == 5
+    assert config.auto_add_min_overdue_ratio == 1.0
     assert config.ignored_items == frozenset()
+
+
+def test_load_config_accepts_auto_add_overdue_threshold(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The auto-add overdue threshold should be configurable."""
+
+    monkeypatch.setenv("TODOIST_DB_PATH", "/tmp/todoist.db")
+    monkeypatch.setenv("TODOIST_API_TOKEN", "token")
+    monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat-id")
+    monkeypatch.setenv("AUTO_ADD_MIN_OVERDUE_RATIO", "0.8")
+
+    config = load_config(dotenv_path="tests/does-not-exist.env")
+
+    assert config.auto_add_min_overdue_ratio == 0.8
 
 
 def test_load_config_normalizes_ignored_items(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -119,6 +137,7 @@ def test_load_config_rejects_invalid_min_confidence(
         ("MAX_ITEMS_PER_RUN", "0"),
         ("MIN_PATTERN_OCCURRENCES", "0"),
         ("BUY_SOON_DAYS", "-1"),
+        ("AUTO_ADD_MIN_OVERDUE_RATIO", "-0.1"),
     ],
 )
 def test_load_config_rejects_out_of_range_numeric_settings(
@@ -141,6 +160,24 @@ def test_load_config_rejects_out_of_range_numeric_settings(
     assert env_name in str(exc_info.value)
 
 
+def test_load_config_rejects_invalid_auto_add_overdue_threshold(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The auto-add overdue threshold should fail fast when it is not numeric."""
+
+    monkeypatch.setenv("TODOIST_DB_PATH", "/tmp/todoist.db")
+    monkeypatch.setenv("TODOIST_API_TOKEN", "token")
+    monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat-id")
+    monkeypatch.setenv("AUTO_ADD_MIN_OVERDUE_RATIO", "soon")
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config(dotenv_path="tests/does-not-exist.env")
+
+    assert "AUTO_ADD_MIN_OVERDUE_RATIO" in str(exc_info.value)
+
+
 def test_load_config_accepts_valid_timezone(monkeypatch: pytest.MonkeyPatch) -> None:
     """A valid IANA timezone should load without error."""
 
@@ -149,11 +186,11 @@ def test_load_config_accepts_valid_timezone(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv("SHOPPING_PROJECT_ID", "project-id")
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot-token")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat-id")
-    monkeypatch.setenv("TIMEZONE", "America/Santiago")
+    monkeypatch.setenv("TIMEZONE", "Etc/UTC")
 
     config = load_config(dotenv_path="tests/does-not-exist.env")
 
-    assert config.timezone == "America/Santiago"
+    assert config.timezone == "Etc/UTC"
 
 
 def test_load_config_rejects_invalid_timezone(monkeypatch: pytest.MonkeyPatch) -> None:

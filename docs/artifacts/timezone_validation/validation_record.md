@@ -7,15 +7,15 @@ uv run python -m shopping_replenisher.cli predict --json
 ```
 
 ## Data Used
-- Real local configuration from `.env`
-- Real Todoist SQLite database at configured `TODOIST_DB_PATH`
+- Local validation configuration
+- An anonymized Todoist SQLite validation snapshot
 - `TIMEZONE` set to a valid IANA name in the local environment
 
 ## What Passed
 - Command completed with exit code `0`
 - `predict started` and `predict report written` log lines emitted — config loaded successfully, pipeline ran to completion
 - JSON output produced with `candidate_count: 5`
-- Report written to `reports/20260413T214619`
+- Report written to `reports/<timestamp>`
 
 ## What Was Verified
 - Config load succeeds with a valid `TIMEZONE` in the environment

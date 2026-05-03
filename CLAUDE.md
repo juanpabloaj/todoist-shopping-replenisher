@@ -31,7 +31,7 @@ The pipeline is a linear read → score → select → write flow, split across 
 
 - **`scoring.py`** — computes `ScoredItem` features per item: gaps, `typical_gap` (median), `gap_stddev`, `overdue_ratio`, confidence (`low`/`medium`/`high`). Confidence thresholds: high = `unique_days >= 8 AND gap_stddev <= 5.5`, medium = `unique_days >= 4 AND gap_stddev <= 7`.
 
-- **`selection.py`** — filters by `MIN_PATTERN_OCCURRENCES`, confidence, active status, `IGNORED_ITEMS`, classifies as `now`/`soon`/`optional`, ranks by `overdue_ratio`, caps auto-add at `MAX_ITEMS_PER_RUN`.
+- **`selection.py`** — filters by `MIN_PATTERN_OCCURRENCES`, confidence, active status, `IGNORED_ITEMS`, classifies as `now`/`soon`/`optional`, ranks by `overdue_ratio`, and caps auto-add at `MAX_ITEMS_PER_RUN`. `BUY_SOON_DAYS` controls `soon` report classification; `AUTO_ADD_MIN_OVERDUE_RATIO` controls which candidates are written automatically.
 
 - **`runner.py`** — orchestrates the full pipeline. In apply mode: writes report artifacts only if there are auto-add candidates, creates Todoist tasks per item (catching `TodoistAPIError` individually and continuing), sends Telegram only if at least one task was added. SQLite errors are logged with context and re-raised (fatal). Exit code 1 if any Todoist write failed.
 
@@ -45,7 +45,7 @@ The pipeline is a linear read → score → select → write flow, split across 
 
 ## Configuration
 
-All configuration via `.env` (never committed). Copy `.env.example` to start. Required vars: `TODOIST_DB_PATH`, `TODOIST_API_TOKEN`, `SHOPPING_PROJECT_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. `IGNORED_ITEMS` is a comma-separated list of normalized item names to exclude from scoring (e.g. `compra`). `TIMEZONE` is an optional IANA timezone name (e.g. `America/Santiago`); invalid values raise `ConfigError` at load time.
+All configuration via `.env` (never committed). Copy `.env.example` to start. Required vars: `TODOIST_DB_PATH`, `TODOIST_API_TOKEN`, `SHOPPING_PROJECT_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. `BUY_SOON_DAYS` controls how early an item is shown as `soon` in reports. `AUTO_ADD_MIN_OVERDUE_RATIO` defaults to `1.0`, so apply mode writes only candidates at or beyond their typical replenishment gap unless explicitly calibrated lower. `IGNORED_ITEMS` is a comma-separated list of normalized item names to exclude from scoring (e.g. `compra`). `TIMEZONE` is an optional IANA timezone name (e.g. `Etc/UTC`); invalid values raise `ConfigError` at load time.
 
 ## Development Stages
 

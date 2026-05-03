@@ -79,7 +79,7 @@ def test_select_candidates_filters_and_ranks_results() -> None:
 
     assert [candidate.scored_item.canonical_name for candidate in candidates] == ["milk", "bread"]
     assert [candidate.candidate_class for candidate in candidates] == ["now", "soon"]
-    assert [candidate.auto_add for candidate in candidates] == [True, True]
+    assert [candidate.auto_add for candidate in candidates] == [True, False]
 
 
 def test_select_candidates_limits_auto_add_classes_but_keeps_optional() -> None:
@@ -140,6 +140,60 @@ def test_select_candidates_limits_auto_add_classes_but_keeps_optional() -> None:
     assert [candidate.auto_add for candidate in candidates] == [True, False]
 
 
+def test_select_candidates_can_calibrate_auto_add_overdue_threshold() -> None:
+    """The auto-add policy should be configurable separately from soon reporting."""
+
+    histories = {
+        "milk": _build_history(
+            "milk",
+            ["Milk", "Milk", "Milk", "Milk"],
+            [
+                "2026-03-01T08:00:00",
+                "2026-03-08T08:00:00",
+                "2026-03-15T08:00:00",
+                "2026-03-22T08:00:00",
+            ],
+        ),
+    }
+    config = _build_config(
+        min_pattern_occurrences=4,
+        min_confidence="medium",
+        buy_soon_days=7,
+        max_items_per_run=5,
+        ignored_items=frozenset(),
+        auto_add_min_overdue_ratio=0.8,
+    )
+
+    candidates = select_candidates(
+        histories=histories,
+        active_items=[],
+        config=config,
+        today=date(2026, 3, 28),
+    )
+
+    assert [candidate.scored_item.canonical_name for candidate in candidates] == ["milk"]
+    assert candidates[0].candidate_class == "soon"
+    assert candidates[0].scored_item.overdue_ratio == 6 / 7
+    assert candidates[0].auto_add is True
+
+    boundary_config = _build_config(
+        min_pattern_occurrences=4,
+        min_confidence="medium",
+        buy_soon_days=7,
+        max_items_per_run=5,
+        ignored_items=frozenset(),
+        auto_add_min_overdue_ratio=6 / 7,
+    )
+    boundary_candidates = select_candidates(
+        histories=histories,
+        active_items=[],
+        config=boundary_config,
+        today=date(2026, 3, 28),
+    )
+
+    assert boundary_candidates[0].auto_add is True
+
+
 def _build_history(
     canonical_name: str,
     contents: list[str],
@@ -173,6 +227,7 @@ def _build_config(
     buy_soon_days: int,
     max_items_per_run: int,
     ignored_items: frozenset[str],
+    auto_add_min_overdue_ratio: float = 1.0,
 ) -> AppConfig:
     """Build a config object for selection tests."""
 
@@ -187,6 +242,7 @@ def _build_config(
         min_pattern_occurrences=min_pattern_occurrences,
         min_confidence=min_confidence,
         buy_soon_days=buy_soon_days,
+        auto_add_min_overdue_ratio=auto_add_min_overdue_ratio,
         ignored_items=ignored_items,
         todoist_task_prefix="",
         log_level="INFO",

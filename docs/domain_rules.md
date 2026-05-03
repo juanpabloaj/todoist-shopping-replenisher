@@ -220,11 +220,15 @@ The design defines the following v1 candidate criteria:
 
 The design also defines the classes:
 
-| Class | Condition | Auto-add |
+| Class | Condition | Default auto-add |
 |---|---|---|
 | `now` | Overdue or clearly forgotten | Yes |
-| `soon` | Due within next `BUY_SOON_DAYS` days | Yes |
+| `soon` | Due within next `BUY_SOON_DAYS` days | No |
 | `optional` | Not urgent | No |
+
+Auto-add is controlled separately from report classification. By default,
+`AUTO_ADD_MIN_OVERDUE_RATIO=1.0`, so candidates are written automatically only
+when they are at least due relative to their typical gap.
 
 The feature examples below use only fields named in `DESIGN.md`:
 
@@ -285,7 +289,7 @@ Classification:
 - Is not currently active
 - Is within the next `BUY_SOON_DAYS` window relative to its expected due point
 - Should be classified as `soon`
-- Should be auto-added
+- Should not be auto-added by default because its `overdue_ratio` is below `1.0`
 
 ### `optional`
 

@@ -99,11 +99,15 @@ No LLMs. The prediction approach is open — rule-based, statistical, or ML mode
 
 ### Classification
 
-| Class | Condition | Auto-add |
+| Class | Condition | Default auto-add |
 |---|---|---|
 | `now` | Overdue or clearly forgotten | Yes |
-| `soon` | Due within next `BUY_SOON_DAYS` days | Yes |
+| `soon` | Due within next `BUY_SOON_DAYS` days | No |
 | `optional` | Not urgent | No (report only) |
+
+`BUY_SOON_DAYS` controls classification for reports. Automatic writes are governed
+separately by `AUTO_ADD_MIN_OVERDUE_RATIO` (default: `1.0`), so items are created
+in Todoist only when their `overdue_ratio` meets the configured threshold.
 
 ---
 
@@ -198,6 +202,7 @@ MAX_ITEMS_PER_RUN=5
 MIN_PATTERN_OCCURRENCES=4
 MIN_CONFIDENCE=medium
 BUY_SOON_DAYS=7
+AUTO_ADD_MIN_OVERDUE_RATIO=1.0
 
 # Optional
 TODOIST_TASK_PREFIX=

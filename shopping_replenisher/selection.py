@@ -53,7 +53,7 @@ def select_candidates(
             Candidate(
                 scored_item=scored_item,
                 candidate_class=candidate_class,
-                auto_add=candidate_class in {"now", "soon"},
+                auto_add=_should_auto_add(scored_item, config),
             )
         )
 
@@ -106,6 +106,14 @@ def _classify_candidate(scored_item: ScoredItem, config: AppConfig) -> Candidate
         return "soon"
 
     return "optional"
+
+
+def _should_auto_add(scored_item: ScoredItem, config: AppConfig) -> bool:
+    """Determine whether a scored item should be written automatically."""
+
+    if scored_item.overdue_ratio is None:
+        return False
+    return scored_item.overdue_ratio >= config.auto_add_min_overdue_ratio
 
 
 def _candidate_priority(candidate: Candidate) -> int:

@@ -11,7 +11,7 @@
 - `ZoneInfo` and `ZoneInfoNotFoundError` are now imported in `config.py`
 
 ## Tests Added
-- `test_load_config_accepts_valid_timezone` — sets `TIMEZONE=America/Santiago`, asserts `config.timezone == "America/Santiago"`
+- `test_load_config_accepts_valid_timezone` — sets `TIMEZONE=Etc/UTC`, asserts `config.timezone == "Etc/UTC"`
 - `test_load_config_rejects_invalid_timezone` — sets `TIMEZONE=Mars/Olympus_Mons`, asserts `ConfigError` with `"TIMEZONE"` in message
 - `test_load_config_accepts_missing_timezone` — deletes `TIMEZONE` from env, asserts `config.timezone is None`
 

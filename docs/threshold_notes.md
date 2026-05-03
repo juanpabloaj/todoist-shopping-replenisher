@@ -10,25 +10,25 @@ Command used:
 uv run python -m shopping_replenisher.cli predict --json
 ```
 
-## Real-Data Observations
+## Anonymized Validation Observations
 
-The reviewed candidate output contained 5 candidates:
+The reviewed candidate output contained 5 anonymized candidates:
 
-- `cafe expresso`
-- `vacuno`
-- `jugo`
-- `pan`
-- `yogurt`
+- `item-a`
+- `item-b`
+- `item-c`
+- `item-d`
+- `item-e`
 
-Observed confidence and stability values from the run:
+Observed confidence and stability ranges from the validation run:
 
-| Item | unique_days | gap_stddev | Confidence before tuning |
+| Item | unique_days range | gap_stddev range | Confidence before tuning |
 |---|---:|---:|---|
-| `cafe expresso` | 5 | 5.70 | `medium` |
-| `vacuno` | 9 | 4.95 | `medium` |
-| `jugo` | 7 | 4.65 | `medium` |
-| `pan` | 13 | 4.03 | `medium` |
-| `yogurt` | 10 | 5.26 | `medium` |
+| `item-a` | 4-6 | 5-6 | `medium` |
+| `item-b` | 8-10 | 4-5 | `medium` |
+| `item-c` | 6-8 | 4-5 | `medium` |
+| `item-d` | 12-14 | 4-5 | `medium` |
+| `item-e` | 9-11 | 5-6 | `medium` |
 
 ## Assessment
 
@@ -41,9 +41,9 @@ That cutoff was too strict relative to the validated shopping-history data. Item
 
 This was most visible for:
 
-- `pan`: `13` unique days, `gap_stddev = 4.03`
-- `vacuno`: `9` unique days, `gap_stddev = 4.95`
-- `yogurt`: `10` unique days, `gap_stddev = 5.26`
+- `item-d`: high purchase volume with moderately noisy intervals
+- `item-b`: high purchase volume with moderately noisy intervals
+- `item-e`: high purchase volume with moderately noisy intervals
 
 These items show repeat purchase behavior with much stronger evidence than a typical `medium` candidate, even though they are not perfectly regular.
 
@@ -70,3 +70,24 @@ The `medium` threshold was kept unchanged:
 - The reviewed run also showed some candidates with `days_since_last = -1`, which indicates purchase timestamps later than the local run date. That issue does not change the confidence heuristic directly, but it should be kept in mind during future real-data validation.
 - Known operational risk: apply-mode idempotency still depends on the Todoist SQLite state being up to date before the next scheduled run. If a scheduled run happens before newly created tasks are reflected locally, the same item could be proposed again.
 - No automatic retries are implemented for Todoist or Telegram failures. The next scheduled cron run is the intended retry mechanism.
+
+## Auto-Add Threshold Review
+
+Date reviewed: `2026-05-03`
+
+Backtesting on an anonymized local validation history showed that
+`BUY_SOON_DAYS=7` was useful for report visibility but too aggressive for
+unattended writes. In a stateful simulation that suppressed an item after it
+would have been added until the next observed purchase, the previous `soon`
+auto-add policy produced lower short-window precision than a due-only policy:
+
+| Policy | Relative auto-add volume | Short-window precision |
+|---|---:|---:|
+| `BUY_SOON_DAYS=7`, auto-add `now` + `soon` | Higher | Lower |
+| Auto-add only when `overdue_ratio >= 1.0` | Lower | Higher |
+
+The default auto-add policy was therefore separated from `BUY_SOON_DAYS`.
+`BUY_SOON_DAYS` still controls which items are classified as `soon` in reports,
+while `AUTO_ADD_MIN_OVERDUE_RATIO=1.0` controls unattended Todoist writes. This
+keeps early candidates visible for manual review without creating tasks before
+the item is due relative to its typical gap.

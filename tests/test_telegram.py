@@ -135,6 +135,7 @@ def _build_config() -> AppConfig:
         min_pattern_occurrences=4,
         min_confidence="medium",
         buy_soon_days=7,
+        auto_add_min_overdue_ratio=1.0,
         ignored_items=frozenset(),
         todoist_task_prefix="",
         log_level="INFO",

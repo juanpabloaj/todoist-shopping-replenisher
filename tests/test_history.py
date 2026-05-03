@@ -94,7 +94,7 @@ def test_build_purchase_occurrences_deduplicates_medium_match_using_configured_t
     occurrences = build_purchase_occurrences(
         completion_events,
         completed_tasks,
-        timezone_name="America/Santiago",
+        timezone_name="Etc/GMT+4",
     )
 
     assert occurrences == [
@@ -145,7 +145,7 @@ def test_to_local_date_uses_configured_timezone_when_provided() -> None:
 
     dt_utc_aware = datetime(2026, 4, 11, 2, 30, 0, tzinfo=timezone.utc)
 
-    assert _to_local_date(dt_utc_aware, "America/Santiago") == date(2026, 4, 10)
+    assert _to_local_date(dt_utc_aware, "Etc/GMT+4") == date(2026, 4, 10)
     assert _to_local_date(dt_utc_aware, "UTC") == date(2026, 4, 11)
 
 
