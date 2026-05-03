@@ -12,7 +12,7 @@
 
 ## Current Status
 
-All 12 planned stages are complete. The repository now contains the full implementation, tests, operational documentation, and stage artifacts documenting later hardening and technical-debt work.
+All 12 planned stages are complete. The repository contains the full implementation, tests, and operational documentation.
 
 ## Validation Standard
 

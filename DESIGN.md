@@ -197,6 +197,8 @@ TELEGRAM_BOT_TOKEN=...
 TELEGRAM_CHAT_ID=...
 
 # Behavior
+# Writes are controlled by the CLI `run --apply` flag; `run` without
+# `--apply` is always a dry-run.
 AUTO_APPLY=false
 MAX_ITEMS_PER_RUN=5
 MIN_PATTERN_OCCURRENCES=4
@@ -214,7 +216,9 @@ TIMEZONE=
 
 ## Output
 
-Each run produces artifacts in a unique directory under `reports/`:
+`predict` always produces artifacts in a unique directory under `reports/`.
+`run --apply` produces report artifacts only when there are auto-add
+candidates to write:
 
 ```
 reports/
@@ -246,7 +250,8 @@ Example cron entry:
 5 8 * * * cd /path/to/todoist_shopping_replenisher && uv run python -m shopping_replenisher.cli run --apply
 ```
 
-Start in dry-run (`AUTO_APPLY=false`) until scoring is validated on real data.
+Start with `run` dry-runs until scoring is validated on real data, then use
+`run --apply` for unattended writes.
 
 ---
 

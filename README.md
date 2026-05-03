@@ -15,7 +15,7 @@ Python tool for analyzing the purchase history of a Todoist shopping project, id
 
 - `shopping_replenisher/`: main application code
 - `tests/`: `pytest` test suite
-- `docs/`: domain rules and threshold notes
+- `docs/`: domain rules, threshold notes, operations guide, and review checklist
 - `ROADMAP.md`: staged development plan
 - `DESIGN.md`: functional design
 - `DEVELOPMENT.md`: development conventions

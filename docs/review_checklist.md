@@ -1,6 +1,6 @@
 # Review Checklist
 
-Use this checklist together with `docs/agent_workflow_process.md`. That document defines the general workflow; this file records repository-specific review checks for this project.
+This file records repository-specific review checks for this project. Use it as a quick gate before opening or closing a pull request.
 
 ## Config
 
