@@ -39,7 +39,7 @@ The pipeline is a linear read → score → select → write flow, split across 
 
 - **`telegram.py`** — sends `Overdue` / `Coming up` / `On the radar` sections. No notification for dry-run or empty apply runs.
 
-- **`todoist_api.py`** — single function `create_task()` using Todoist REST API v1 tasks endpoint, no dependencies beyond stdlib.
+- **`todoist_api.py`** — single public function `create_task()` using Todoist REST API v1 tasks endpoint, no dependencies beyond stdlib. Transient failures (408/429/5xx and network errors) are retried up to `MAX_ATTEMPTS` times with a fixed backoff, honouring `Retry-After` when present; the `X-Request-Id` idempotency key is kept stable across retries so a retry cannot duplicate a task. Other HTTP codes fail immediately.
 
 - **`cli.py`** — entry point. Configures logging with timestamps from `LOG_LEVEL`. `predict` always writes reports and never calls Todoist/Telegram.
 

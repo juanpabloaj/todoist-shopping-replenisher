@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+import email.message
 import json
 from pathlib import Path
 from urllib import error, request
@@ -12,7 +13,7 @@ import pytest
 from shopping_replenisher.config import AppConfig
 from shopping_replenisher.scoring import ScoredItem
 from shopping_replenisher.selection import Candidate
-from shopping_replenisher.todoist_api import TodoistAPIError, create_task
+from shopping_replenisher.todoist_api import MAX_ATTEMPTS, TodoistAPIError, create_task
 
 
 def test_create_task_posts_expected_payload(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -94,6 +95,148 @@ def test_create_task_raises_on_http_error(monkeypatch: pytest.MonkeyPatch) -> No
         create_task(config, candidate)
 
     assert "400" in str(exc_info.value)
+
+
+def test_create_task_retries_transient_server_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A transient 503 should be retried and succeed without failing the run."""
+
+    config = _build_config(todoist_task_prefix="")
+    candidate = _build_candidate()
+    attempts: list[str] = []
+
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
+        _ = timeout
+        headers = {key.lower(): value for key, value in http_request.header_items()}
+        attempts.append(headers["x-request-id"])
+        if len(attempts) == 1:
+            raise error.HTTPError(
+                url=http_request.full_url,
+                code=503,
+                msg="Service Unavailable",
+                hdrs=None,
+                fp=_FakeErrorResponse("service unavailable"),
+            )
+        return _FakeResponse('{"id": 789}')
+
+    monkeypatch.setattr("shopping_replenisher.todoist_api.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("shopping_replenisher.todoist_api.time.sleep", lambda _seconds: None)
+
+    task_id = create_task(config, candidate)
+
+    assert task_id == "789"
+    assert len(attempts) == 2
+    # The idempotency key must stay stable so a retry cannot duplicate the task.
+    assert attempts[0] == attempts[1]
+
+
+def test_create_task_gives_up_after_max_attempts(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Persistent transient failures should stop after MAX_ATTEMPTS."""
+
+    config = _build_config(todoist_task_prefix="")
+    candidate = _build_candidate()
+    attempts: list[int] = []
+    delays: list[float] = []
+
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
+        _ = timeout
+        attempts.append(1)
+        raise error.HTTPError(
+            url=http_request.full_url,
+            code=503,
+            msg="Service Unavailable",
+            hdrs=None,
+            fp=_FakeErrorResponse("service unavailable"),
+        )
+
+    monkeypatch.setattr("shopping_replenisher.todoist_api.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("shopping_replenisher.todoist_api.time.sleep", delays.append)
+
+    with pytest.raises(TodoistAPIError) as exc_info:
+        create_task(config, candidate)
+
+    assert "503" in str(exc_info.value)
+    assert len(attempts) == MAX_ATTEMPTS
+    assert len(delays) == MAX_ATTEMPTS - 1
+
+
+def test_create_task_retries_network_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Network-level failures should be retried too."""
+
+    config = _build_config(todoist_task_prefix="")
+    candidate = _build_candidate()
+    attempts: list[int] = []
+
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
+        _ = http_request
+        _ = timeout
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise error.URLError("connection reset")
+        return _FakeResponse('{"id": 321}')
+
+    monkeypatch.setattr("shopping_replenisher.todoist_api.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("shopping_replenisher.todoist_api.time.sleep", lambda _seconds: None)
+
+    assert create_task(config, candidate) == "321"
+    assert len(attempts) == 2
+
+
+def test_create_task_does_not_retry_client_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A 400 is not transient and must fail on the first attempt."""
+
+    config = _build_config(todoist_task_prefix="")
+    candidate = _build_candidate()
+    attempts: list[int] = []
+
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
+        _ = timeout
+        attempts.append(1)
+        raise error.HTTPError(
+            url=http_request.full_url,
+            code=400,
+            msg="Bad Request",
+            hdrs=None,
+            fp=_FakeErrorResponse('{"error":"invalid request"}'),
+        )
+
+    monkeypatch.setattr("shopping_replenisher.todoist_api.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("shopping_replenisher.todoist_api.time.sleep", lambda _seconds: None)
+
+    with pytest.raises(TodoistAPIError):
+        create_task(config, candidate)
+
+    assert len(attempts) == 1
+
+
+def test_create_task_honours_retry_after_header(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A 429 with Retry-After should wait for the advertised delay."""
+
+    config = _build_config(todoist_task_prefix="")
+    candidate = _build_candidate()
+    delays: list[float] = []
+    attempts: list[int] = []
+
+    rate_limit_headers = email.message.Message()
+    rate_limit_headers["Retry-After"] = "7"
+
+    def fake_urlopen(http_request: request.Request, timeout: int) -> "_FakeResponse":
+        _ = timeout
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise error.HTTPError(
+                url=http_request.full_url,
+                code=429,
+                msg="Too Many Requests",
+                hdrs=rate_limit_headers,
+                fp=_FakeErrorResponse("rate limited"),
+            )
+        return _FakeResponse('{"id": 654}')
+
+    monkeypatch.setattr("shopping_replenisher.todoist_api.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("shopping_replenisher.todoist_api.time.sleep", delays.append)
+
+    assert create_task(config, candidate) == "654"
+    assert delays == [7.0]
 
 
 def test_create_task_raises_on_invalid_json(monkeypatch: pytest.MonkeyPatch) -> None:
